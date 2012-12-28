@@ -186,13 +186,13 @@ unsigned long clock_seconds(void);
 #define UIP_CONF_DHCP_LIGHT      1
 
 
-#if 0 /* No radio cycling */
+#if 1 /* No radio cycling */
 
 #define NETSTACK_CONF_MAC         nullmac_driver
-#define NETSTACK_CONF_RDC         sicslowmac_driver
+#define NETSTACK_CONF_RDC         nullrdc_driver //sicslowmac_driver
 #define NETSTACK_CONF_FRAMER      framer_802154
 #define NETSTACK_CONF_RADIO       rf230_driver
-#define CHANNEL_802_15_4          26
+#define CHANNEL_802_15_4          19
 /* AUTOACK receive mode gives better rssi measurements, even if ACK is never requested */
 #define RF230_CONF_AUTOACK        1
 /* Request 802.15.4 ACK on all packets sent (else autoretry). This is primarily for testing. */
@@ -201,9 +201,9 @@ unsigned long clock_seconds(void);
 #define RF230_CONF_AUTORETRIES    2
 /* Default is one RAM buffer for received packets. More than one may benefit multiple TCP connections or ports */
 #define RF230_CONF_RX_BUFFERS     3
-#define SICSLOWPAN_CONF_FRAG      1
+//#define SICSLOWPAN_CONF_FRAG      1
 /* Most browsers reissue GETs after 3 seconds which stops fragment reassembly so a longer MAXAGE does no good */
-#define SICSLOWPAN_CONF_MAXAGE    3
+//#define SICSLOWPAN_CONF_MAXAGE    3
 /* How long to wait before terminating an idle TCP connection. Smaller to allow faster sleep. Default is 120 seconds */
 /* If wait is too short the connection can be reset as a result of multiple fragment reassembly timeouts */
 #define UIP_CONF_WAIT_TIMEOUT     20

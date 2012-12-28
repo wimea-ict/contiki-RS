@@ -91,7 +91,7 @@
 #include "net/rime.h"
 
 /* Track interrupt flow through mac, rdc and radio driver */
-//#define DEBUGFLOWSIZE 32
+#define DEBUGFLOWSIZE 32
 #if DEBUGFLOWSIZE
 uint8_t debugflowsize,debugflow[DEBUGFLOWSIZE];
 #define DEBUGFLOW(c) if (debugflowsize<(DEBUGFLOWSIZE-1)) debugflow[debugflowsize++]=c
@@ -105,7 +105,7 @@ uint8_t debugflowsize,debugflow[DEBUGFLOWSIZE];
 #define PERIODICPRINTS 1
 #if PERIODICPRINTS
 //#define PINGS 64
-#define ROUTES 600
+#define ROUTES 60
 #define STAMPS 60
 #define STACKMONITOR 1024
 uint32_t clocktime;
@@ -240,9 +240,16 @@ void initialize(void)
 #endif  
   rimeaddr_set_node_addr(&addr); 
 
-  rf230_set_pan_addr(params_get_panid(),params_get_panaddr(),(uint8_t *)&addr.u8);
+  printf("params_get_panid(): %d params_get_panaddr() %d", params_get_panid(), params_get_panaddr());
+
+  /* TODO: Understand the get params functions */
+  //rf230_set_pan_addr(params_get_panid(),params_get_panaddr(),(uint8_t *)&addr.u8);
+
+  // Setting this explicitly as I do not trust what is being returned from params_get_panid() and params_get_panaddr()
+  rf230_set_pan_addr(IEEE802154_PANID, 0,(uint8_t *)&addr.u8);
   rf230_set_channel(params_get_channel());
-  rf230_set_txpower(params_get_txpower());
+  //printf("get tx power from eeprom: %d \n", params_get_txpower());
+  rf230_set_txpower(0); // Setting this explicitly as I do not trust what is being returned from params_get_txpower()
 
 #if UIP_CONF_IPV6
   PRINTA("EUI-64 MAC: %x-%x-%x-%x-%x-%x-%x-%x\n",addr.u8[0],addr.u8[1],addr.u8[2],addr.u8[3],addr.u8[4],addr.u8[5],addr.u8[6],addr.u8[7]);

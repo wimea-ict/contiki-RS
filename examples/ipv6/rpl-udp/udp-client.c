@@ -49,10 +49,10 @@
 #include "net/uip-debug.h"
 
 #ifndef PERIOD
-#define PERIOD 60
+#define PERIOD 5
 #endif
 
-#define START_INTERVAL		(15 * CLOCK_SECOND)
+#define START_INTERVAL		(5 * CLOCK_SECOND)
 #define SEND_INTERVAL		(PERIOD * CLOCK_SECOND)
 #define SEND_TIME		(random_rand() % (SEND_INTERVAL))
 #define MAX_PAYLOAD_LEN		30

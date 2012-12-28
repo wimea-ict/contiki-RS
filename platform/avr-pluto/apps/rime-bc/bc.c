@@ -227,9 +227,6 @@ PROCESS_THREAD(broadcast_process, ev, data)
     msg.seqno = seqno;
     packetbuf_copyfrom(&msg, sizeof(struct broadcast_message));
     
-    //rf230_on();
-    NETSTACK_RADIO.on();
-
     broadcast_send(&broadcast);
 
     seqno++;
