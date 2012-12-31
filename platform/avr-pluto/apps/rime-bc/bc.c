@@ -1,6 +1,6 @@
 /*
   Contiki Rime BRD demo.
-  Broadcast Temp, Bat Voltage, RSSI, LQI DEMO.    Robert Olsson GPL
+  Broadcast Temp, Bat Voltage, RSSI, LQI DEMO. Robert Olsson <robert@herjulf.se>
 
   Almost all code comes from:
 
