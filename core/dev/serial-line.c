@@ -80,6 +80,7 @@ serial_line_input_byte(unsigned char c)
   }
 
   /* Wake up consumer process */
+//printf("wake up consumer process\n");
   process_poll(&serial_line_process);
   return 1;
 }
@@ -92,13 +93,19 @@ PROCESS_THREAD(serial_line_process, ev, data)
   PROCESS_BEGIN();
 
   serial_line_event_message = process_alloc_event();
+
+
   ptr = 0;
 
   while(1) {
     /* Fill application buffer until newline or empty */
+    
+    printf("Inside serial_line_process : serial_line_event_message = %d\n", serial_line_event_message);
+  
     int c = ringbuf_get(&rxbuf);
     
     if(c == -1) {
+      printf("rxbuf empty, process yeilding\n") ;
       /* Buffer empty, wait for poll */
       PROCESS_YIELD();
     } else {
@@ -113,7 +120,9 @@ PROCESS_THREAD(serial_line_process, ev, data)
         buf[ptr++] = (uint8_t)'\0';
 
         /* Broadcast event */
-        process_post(PROCESS_BROADCAST, serial_line_event_message, buf);
+   
+       printf("Broadcast event serial_line_event_message\n");
+       process_post(PROCESS_BROADCAST, serial_line_event_message, buf);
 
         /* Wait until all processes have handled the serial line event */
         if(PROCESS_ERR_OK ==

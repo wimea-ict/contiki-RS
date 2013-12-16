@@ -369,9 +369,12 @@ rs232_send(uint8_t port, unsigned char c)
 void
 rs232_set_input(uint8_t port, int (*f)(unsigned char))
 {
+
+   printf("inside rs232_set_input, port:%d, NumPort:%d \n", port, NUMPORTS) ;
 #if NUMPORTS > 0
   if (port == 0) {
     input_handler_0 = f;
+    printf("Input handler set for rs232\n"); 
 #if NUMPORTS > 1
   } else if (port == 1) {
     input_handler_1 = f;

@@ -12,10 +12,15 @@ CUSTOM_RULE_LINK = 1
 %.$(TARGET): %.co $(PROJECT_OBJECTFILES) $(PROJECT_LIBRARIES) contiki-$(TARGET).a 
 	$(LD) $(LDFLAGS) $(TARGET_STARTFILES) ${filter-out %.a,$^} ${filter %.a,$^} $(TARGET_LIBFILES) -o $@ $(CLIBS)
 
+
+APPS=serial-shell
+
 include $(CONTIKI)/Makefile.include
 
-all: hex bc
+
+
+all: hex bc 
 
 hex :
-	$(OBJCOPY) bc.avr-pluto -j .text -j .data -O ihex bc.hex
+	$(OBJCOPY) bc.avr-radiosensors -j .text -j .data -O ihex bc.hex
 

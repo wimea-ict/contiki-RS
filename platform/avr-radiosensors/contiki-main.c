@@ -68,6 +68,7 @@
 #include "dev/rs232.h"
 #include "dev/serial-line.h"
 #include "dev/slip.h"
+#include "dev/uart1.h"
 
 #ifdef RAVEN_LCD_INTERFACE
 #include "raven-lcd.h"
@@ -89,6 +90,8 @@
 #endif
 
 #include "net/rime.h"
+#include "i2cmaster.h"
+
 
 /* Track interrupt flow through mac, rdc and radio driver */
 #define DEBUGFLOWSIZE 32
@@ -166,6 +169,66 @@ rng_get_uint8(void) {
   return j;
 }
 
+
+
+/*------------Subroutine to read EUI64 address from AT24MAC602 chip----------*/
+/*-------- return true on successful read and fale on failure ---------------*/
+
+#define AT24MAC602_DEV_ADDR 0xB0
+#define EUI64_ADDR_LOC   0x98
+#define SIZE_OF_EUI64_ADDR 8
+
+bool get_eui64_addr(){// uint8_t *addr_array){
+     
+     uint8_t ret = 1 ; 	
+     uint8_t i = 0 ;
+     uint8_t addr_array[SIZE_OF_EUI64_ADDR] ;
+     i2c_init();                             // initialize I2C library
+
+     printf("$I2C Init\n");	
+/*
+     // write 0x75 to EEPROM address 5 (Byte Write) 
+     i2c_start_wait(AT24MAC602_DEV_ADDR+I2C_WRITE);     // set device address and write mode
+     i2c_write(EUI_ADDR_LOCATION);                        // write address = 5
+     i2c_write(0x75);                        // write value 0x75 to EEPROM
+     i2c_stop();                             // set stop conditon = release bus
+
+*/
+     // read previously written value back from EEPROM address 5 
+     ret = i2c_start(AT24MAC602_DEV_ADDR+I2C_WRITE) ;     // set device address and write mode
+     
+     //i2c_start_wait(AT24MAC602_DEV_ADDR+I2C_WRITE) ;     // set device address and write mode
+     if( ret ){
+	i2c_stop() ;
+
+	printf("ERROR : No Slave Dev Found at Addr %2x\n", AT24MAC602_DEV_ADDR+I2C_WRITE) ;
+	return false ;
+     
+     } else {	
+
+     	i2c_write(EUI64_ADDR_LOC);                        // write address = 5
+     	
+     	if(! i2c_rep_start(AT24MAC602_DEV_ADDR+I2C_READ)){       // set device address and read mode
+    
+     		printf("\n********EUI64 ADDR : ") ;
+     		for( i = 0 ; i < SIZE_OF_EUI64_ADDR-1 ; ++i){
+			addr_array[i] = i2c_readAck() ;
+			printf("%2X ",addr_array[i]) ;
+    	 	}
+     		addr_array[i] = i2c_readNak();                    // read one byte from EEPROM
+     		printf("%2X ********\n",addr_array[i]); 
+     		i2c_stop();
+	}else{
+		printf("Device not found\n"); 
+		return false ;
+	}
+     }
+    // for(;;);
+     
+      return true ;
+} 
+
+
 /*-------------------------Low level initialization------------------------*/
 /*------Done in a subroutine to keep main routine stack usage small--------*/
 void initialize(void)
@@ -178,6 +241,10 @@ void initialize(void)
 
   rs232_redirect_stdout(RS232_PORT_0);
 
+// set handlers for input on serial port ! 
+  rs232_set_input(RS232_PORT_0 , serial_line_input_byte) ; 
+  serial_line_init();
+  
   clock_init();
 
   if(MCUSR & (1<<PORF )) PRINTD("Power-on reset.\n");
@@ -362,6 +429,12 @@ void initialize(void)
   DDRE|=(1<<DDE1);  //set led pin to output (Micheal Hatrtman board)
   PORTE&=~(1<<PE1); //and low to turn led off
 #endif
+
+//  printf("Calling get_eui64_addr() Disabled\n");
+//  get_eui64_addr();
+   
+// initialise the serialline input
+
 }
 
 #if ROUTES && UIP_CONF_IPV6
@@ -462,7 +535,7 @@ main(void)
 	if ((clocktime%STAMPS)==0) {
 #if ENERGEST_CONF_ON
 #include "lib/print-stats.h"
-	  print_stats();
+//	  print_stats();  commented maneesh
 #elif RADIOSTATS
 	  extern volatile unsigned long radioontime;
 	  PRINTF("%u(%u)s\n",clocktime,radioontime);
@@ -538,7 +611,7 @@ main(void)
 	  uint16_t p=(uint16_t)&__bss_end;
 	  do {
 	    if (*(uint16_t *)p != 0x4242) {
-	      PRINTF("Never-used stack > %d bytes\n",p-(uint16_t)&__bss_end);
+	 //     PRINTF("Never-used stack > %d bytes\n",p-(uint16_t)&__bss_end);  commented maneesh
 	      break;
 	    }
 	    p+=10;

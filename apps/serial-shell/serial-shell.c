@@ -97,7 +97,10 @@ PROCESS_THREAD(serial_shell_process, ev, data)
   shell_init();
 
   while(1) {
+    // remove these printf - maneesh
+    printf("Inside serial_shell_process Loop...\n") ;
     PROCESS_WAIT_EVENT_UNTIL(ev == serial_line_event_message && data != NULL);
+    printf("shell_input ... called \n") ;
     shell_input(data, strlen(data));
   }
 

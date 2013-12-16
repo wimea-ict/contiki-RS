@@ -89,6 +89,7 @@ PROCESS_THREAD(shell_time_process, ev, data)
     uint16_t timesynch_authority;
     uint16_t time[2];
   } msg;
+  
   unsigned long newtime;
   const char *nextptr;
   

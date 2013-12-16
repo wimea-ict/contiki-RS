@@ -360,7 +360,7 @@ shell_input(char *commandline, int commandline_len)
 {
   struct shell_input input;
 
-  /*  printf("shell_input front_process '%s'\n", front_process->name);*/
+   printf("shell_input front_process '%s'\n", front_process->name);
 
   if(commandline[0] == '~' &&
      commandline[1] == 'K') {
@@ -423,9 +423,12 @@ shell_register_command(struct shell_command *c)
   }
   if(p == NULL) {
     list_push(commands, c);
-  } else if(i == NULL) {
+    printf("command %s pushed\n", c->command);
+ } else if(i == NULL) {
+    printf("command %s added\n", c->command);
     list_add(commands, c);
   } else {
+    printf("command %s inserted\n", c->command);
     list_insert(commands, p, c);
   }
 }
@@ -442,13 +445,15 @@ PROCESS_THREAD(shell_process, ev, data)
   
   while(1) {
     shell_prompt(shell_prompt_text);
-    
+    printf("ev = %d, shell_event_input = %d\n", ev,shell_event_input);
+    printf("Enter your command: ") ; // maneesh - remove this after testing 
+       
     PROCESS_WAIT_EVENT_UNTIL(ev == shell_event_input);
     {
       input = data;
       ret = shell_start_command(input->data1, input->len1, NULL,
 				&started_process);
-
+      printf("\nStarted process");     
       if(started_process != NULL &&
 	 ret == SHELL_FOREGROUND &&
 	 process_is_running(started_process)) {
@@ -510,7 +515,8 @@ shell_init(void)
   shell_register_command(&quit_command);
   
   shell_event_input = process_alloc_event();
-  
+ 
+  printf("Initial Shell event input = %d\n", shell_event_input);  
   process_start(&shell_process, NULL);
   process_start(&shell_server_process, NULL);
 
