@@ -71,7 +71,7 @@ PROCESS(broadcast_process, "Broadcast process");
  *    in the broadcast report   
 */
 
-/*
+#ifdef SHELL_INTERFACE
 PROCESS(rint_process , "Set Report Interval");
 SHELL_COMMAND( rint_command, 
                "rint", 
@@ -83,26 +83,26 @@ SHELL_COMMAND( rmask_command,
                "rmask", 
                "rmask <number> [Here the \"number\" denotes the 8 bit mask for the data fields in the Sensor Report]",
                &rmask_process) ;
-*/
+#endif
 
 /* -----------------------------------------------------------------------------------------------------------------*/
 
 //AUTOSTART_PROCESSES(&init_process, &broadcast_process);
 
 
- PROCESS(test_serial, "Serial line test process");
- AUTOSTART_PROCESSES(&init_process, &broadcast_process,&test_serial);
+PROCESS(test_serial, "Serial line test process");
+AUTOSTART_PROCESSES( &init_process,&test_serial, &broadcast_process);
  
- PROCESS_THREAD(test_serial, ev, data)
- {
+PROCESS_THREAD(test_serial, ev, data)
+{
    PROCESS_BEGIN();
-  
+
    printf("Process begins for test_serial !! \n") ;
    for(;;) {
 
-     printf("still in loop test_serial\n");
-     PROCESS_YIELD();
-     printf("EV = %d\n",ev) ;
+     printf("Waiting for EV = %d to be equal to  serial_line_event_message = %d\n",ev, serial_line_event_message);
+     PROCESS_YIELD_UNTIL(ev == serial_line_event_message);
+     printf("Serial Line Test Process Polled:  EV = %d\n",ev) ;
      if(ev == serial_line_event_message) {
        printf("received line: %s\n", (char *)data);
      } else {
@@ -111,7 +111,7 @@ SHELL_COMMAND( rmask_command,
    }
    	
    PROCESS_END();
- }
+}
 
 int radio_sleep = 0;
 
@@ -288,7 +288,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 
     seqno++;
    
-//    printf("&: %s\n", msg.buf);
+    printf("&: %s\n", msg.buf);
 
     PORTE |= LED_YELLOW; 
   }
@@ -300,7 +300,6 @@ PROCESS_THREAD(init_process, ev, data)
   PROCESS_BEGIN();
 
   printf("Init\n");
-
   DDRE |= LED_YELLOW;
   DDRE |= LED_RED;
 
@@ -311,16 +310,19 @@ PROCESS_THREAD(init_process, ev, data)
 
   rtcc_init();
 
+//  serial line init !!! 
+//   serial_line_init();
   
 // Registering the shell commands - maneesh 14/12/2013	 
-/* 
+#ifdef SHELL_INTERFACE 
   serial_shell_init();
   printf("serial_shell_init()\n");
   shell_register_command(&rint_command);
   printf("registered rint command\n");
   shell_register_command(&rmask_command);
   printf("registered rmask command\n"); 
-*/  
+#endif 
+ 
   PROCESS_END();
 }
 

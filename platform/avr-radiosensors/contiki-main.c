@@ -70,24 +70,6 @@
 #include "dev/slip.h"
 #include "dev/uart1.h"
 
-#ifdef RAVEN_LCD_INTERFACE
-#include "raven-lcd.h"
-#endif
-
-#if AVR_WEBSERVER
-#include "httpd-fs.h"
-#include "httpd-cgi.h"
-#endif
-
-#ifdef COFFEE_FILES
-#include "cfs/cfs.h"
-#include "cfs/cfs-coffee.h"
-#endif
-
-#if UIP_CONF_ROUTER&&0
-#include "net/routing/rimeroute.h"
-#include "net/rime/rime-udp.h"
-#endif
 
 #include "net/rime.h"
 #include "i2cmaster.h"
@@ -178,13 +160,37 @@ rng_get_uint8(void) {
 #define EUI64_ADDR_LOC   0x98
 #define SIZE_OF_EUI64_ADDR 8
 
-bool get_eui64_addr(){// uint8_t *addr_array){
+
+void probe_i2c_bus(){
+     uint8_t ret = 0 ;
+     uint8_t temp_addr = 0 ;
+     for( ; temp_addr < 255 ; ++temp_addr){ 
+     	ret =  i2c_start(AT24MAC602_DEV_ADDR+I2C_WRITE) ;     // set device address and write mode
      
-     uint8_t ret = 1 ; 	
+     	if( !ret ){
+     	//   i2c_stop() ;
+        	printf("\nSlave Dev Found at Addr %2x\n", temp_addr) ;
+		i2c_stop() ;
+        }
+     }
+}
+
+bool get_eui64_addr(uint8_t *addr_array){
+     
+
+   
+     uint8_t ret = 0 ; 	
      uint8_t i = 0 ;
-     uint8_t addr_array[SIZE_OF_EUI64_ADDR] ;
+    //uint8_t addr_array[SIZE_OF_EUI64_ADDR] ;
+
+     cli() ; // clear interrupts
+
      i2c_init();                             // initialize I2C library
 
+     sei() ; // set interrupts
+
+     probe_i2c_bus() ;
+     
      printf("$I2C Init\n");	
 /*
      // write 0x75 to EEPROM address 5 (Byte Write) 
@@ -195,9 +201,9 @@ bool get_eui64_addr(){// uint8_t *addr_array){
 
 */
      // read previously written value back from EEPROM address 5 
-     ret = i2c_start(AT24MAC602_DEV_ADDR+I2C_WRITE) ;     // set device address and write mode
+     //ret = i2c_start(AT24MAC602_DEV_ADDR+I2C_WRITE) ;     // set device address and write mode
      
-     //i2c_start_wait(AT24MAC602_DEV_ADDR+I2C_WRITE) ;     // set device address and write mode
+     i2c_start_wait(AT24MAC602_DEV_ADDR+I2C_WRITE) ;     // set device address and write mode
      if( ret ){
 	i2c_stop() ;
 
@@ -206,9 +212,9 @@ bool get_eui64_addr(){// uint8_t *addr_array){
      
      } else {	
 
-     	i2c_write(EUI64_ADDR_LOC);                        // write address = 5
-     	
-     	if(! i2c_rep_start(AT24MAC602_DEV_ADDR+I2C_READ)){       // set device address and read mode
+     	if( !i2c_write(EUI64_ADDR_LOC) )                      // write address = 5
+     	{
+     	  if(! i2c_rep_start(AT24MAC602_DEV_ADDR+I2C_READ)){       // set device address and read mode
     
      		printf("\n********EUI64 ADDR : ") ;
      		for( i = 0 ; i < SIZE_OF_EUI64_ADDR-1 ; ++i){
@@ -218,9 +224,12 @@ bool get_eui64_addr(){// uint8_t *addr_array){
      		addr_array[i] = i2c_readNak();                    // read one byte from EEPROM
      		printf("%2X ********\n",addr_array[i]); 
      		i2c_stop();
-	}else{
+	  }else{
 		printf("Device not found\n"); 
 		return false ;
+	  }
+        }else{
+	  printf("I2C_WRITE: Failed to write %2X\n",EUI64_ADDR_LOC) ;
 	}
      }
     // for(;;);
@@ -233,18 +242,23 @@ bool get_eui64_addr(){// uint8_t *addr_array){
 /*------Done in a subroutine to keep main routine stack usage small--------*/
 void initialize(void)
 {
-  rs232_init(RS232_PORT_0, USART_BAUD_38400,USART_PARITY_NONE | USART_STOP_BITS_1 | USART_DATA_BITS_8);
+//  rs232_init(RS232_PORT_0, USART_BAUD_38400,USART_PARITY_NONE | USART_STOP_BITS_1 | USART_DATA_BITS_8);
 
   UBRR0L = 25;
   UBRR0H = 0;
   UCSR0A = (1<<U2X0);  /*Double */
 
-  rs232_redirect_stdout(RS232_PORT_0);
-
-// set handlers for input on serial port ! 
-  rs232_set_input(RS232_PORT_0 , serial_line_input_byte) ; 
-  serial_line_init();
+  rimeaddr_t addr;
   
+
+  rs232_redirect_stdout(RS232_PORT_0); 
+
+  get_eui64_addr(addr.u8) ;
+  
+  rs232_set_input(RS232_PORT_0 , serial_line_input_byte) ; 
+ 
+  serial_line_init();
+
   clock_init();
 
   if(MCUSR & (1<<PORF )) PRINTD("Power-on reset.\n");
@@ -287,24 +301,18 @@ void initialize(void)
    * Some layers will ignore duplicates found in a history (e.g. Contikimac)
    * causing the initial packets to be ignored after a short-cycle restart.
    */
+
   random_init(rng_get_uint8());
 
-  /* Set addresses BEFORE starting tcpip process */
 
-  rimeaddr_t addr;
+// read mac from  at24mac602 chip over twi
 
+/*
   if (params_get_eui64(addr.u8)) {
     PRINTA("Random EUI64 address generated\n");
   }
- 
-#if UIP_CONF_IPV6 
-  memcpy(&uip_lladdr.addr, &addr.u8, sizeof(rimeaddr_t));
-#elif WITH_NODE_ID
-  node_id=get_panaddr_from_eeprom();
-  addr.u8[1]=node_id&0xff;
-  addr.u8[0]=(node_id&0xff00)>>8;
-  PRINTA("Node ID from eeprom: %X\n",node_id);
-#endif  
+*/ 
+  
   rimeaddr_set_node_addr(&addr); 
 
   printf("params_get_panid(): %d params_get_panaddr() %d", params_get_panid(), params_get_panaddr());
@@ -318,16 +326,7 @@ void initialize(void)
   //printf("get tx power from eeprom: %d \n", params_get_txpower());
   rf230_set_txpower(0); // Setting this explicitly as I do not trust what is being returned from params_get_txpower()
 
-#if UIP_CONF_IPV6
   PRINTA("EUI-64 MAC: %x-%x-%x-%x-%x-%x-%x-%x\n",addr.u8[0],addr.u8[1],addr.u8[2],addr.u8[3],addr.u8[4],addr.u8[5],addr.u8[6],addr.u8[7]);
-#else
-  PRINTA("MAC address ");
-  uint8_t i;
-  for (i=sizeof(rimeaddr_t); i>0; i--){
-    PRINTA("%x:",addr.u8[i-1]);
-  }
-  PRINTA("\n");
-#endif
 
   /* Initialize stack protocols */
   queuebuf_init();
@@ -339,101 +338,12 @@ void initialize(void)
   PRINTA("%s %s, channel %u , check rate %u Hz tx power %u\n",NETSTACK_MAC.name, NETSTACK_RDC.name, rf230_get_channel(),
 	 CLOCK_SECOND / (NETSTACK_RDC.channel_check_interval() == 0 ? 1:NETSTACK_RDC.channel_check_interval()),
 	 rf230_get_txpower());   
-#if UIP_CONF_IPV6_RPL
-  PRINTA("RPL Enabled\n");
-#endif
-#if UIP_CONF_ROUTER
-  PRINTA("Routing Enabled\n");
-#endif
-
 #endif /* ANNOUNCE_BOOT */
 
-  process_start(&tcpip_process, NULL);
-
-#ifdef RAVEN_LCD_INTERFACE
-  process_start(&raven_lcd_process, NULL);
-#endif
-
-  /* Autostart other processes */
+/* Autostart other processes */
   autostart_start(autostart_processes);
 
-  /*---If using coffee file system create initial web content if necessary---*/
-#if COFFEE_FILES
-  int fa = cfs_open( "/index.html", CFS_READ);
-  if (fa<0) {     //Make some default web content
-    PRINTA("No index.html file found, creating upload.html!\n");
-    PRINTA("Formatting FLASH file system for coffee...");
-    cfs_coffee_format();
-    PRINTA("Done!\n");
-    fa = cfs_open( "/index.html", CFS_WRITE);
-    int r = cfs_write(fa, &"It works!", 9);
-    if (r<0) PRINTA("Can''t create /index.html!\n");
-    cfs_close(fa);
-    //  fa = cfs_open("upload.html"), CFW_WRITE);
-    // <html><body><form action="upload.html" enctype="multipart/form-data" method="post"><input name="userfile" type="file" size="50" /><input value="Upload" type="submit" /></form></body></html>
-  }
-#endif /* COFFEE_FILES */
-
-  /* Add addresses for testing */
-#if 0
-  {  
-    uip_ip6addr_t ipaddr;
-    uip_ip6addr(&ipaddr, 0xaaaa, 0, 0, 0, 0, 0, 0, 0);
-    uip_ds6_addr_add(&ipaddr, 0, ADDR_AUTOCONF);
-    //  uip_ds6_prefix_add(&ipaddr,64,0);
-  }
-#endif
-
-  /*--------------------------Announce the configuration---------------------*/
-#if ANNOUNCE_BOOT
-#if AVR_WEBSERVER
-  { uint8_t i;
-    char buf[80];
-    unsigned int size;
-
-    for (i=0;i<UIP_DS6_ADDR_NB;i++) {
-      if (uip_ds6_if.addr_list[i].isused) {   
-	httpd_cgi_sprint_ip6(uip_ds6_if.addr_list[i].ipaddr,buf);
-	PRINTA("IPv6 Address: %s\n",buf);
-      }
-    }
-    cli();
-    eeprom_read_block (buf,eemem_server_name, sizeof(eemem_server_name));
-    sei();
-    buf[sizeof(eemem_server_name)]=0;
-    PRINTA("%s",buf);
-    cli();
-    eeprom_read_block (buf,eemem_domain_name, sizeof(eemem_domain_name));
-    sei();
-    buf[sizeof(eemem_domain_name)]=0;
-    size=httpd_fs_get_size();
-#ifndef COFFEE_FILES
-    PRINTA(".%s online with fixed %u byte web content\n",buf,size);
-#elif COFFEE_FILES==1
-    PRINTA(".%s online with static %u byte EEPROM file system\n",buf,size);
-#elif COFFEE_FILES==2
-    PRINTA(".%s online with dynamic %u KB EEPROM file system\n",buf,size>>10);
-#elif COFFEE_FILES==3
-    PRINTA(".%s online with static %u byte program memory file system\n",buf,size);
-#elif COFFEE_FILES==4
-    PRINTA(".%s online with dynamic %u KB program memory file system\n",buf,size>>10);
-#endif /* COFFEE_FILES */
-  }
-#else
   PRINTA("Online\n");
-#endif
-#endif /* ANNOUNCE_BOOT */
-
-#if RF230BB_CONF_LEDONPORTE1
-  /* NB: PORTE1 conflicts with UART0 */
-  DDRE|=(1<<DDE1);  //set led pin to output (Micheal Hatrtman board)
-  PORTE&=~(1<<PE1); //and low to turn led off
-#endif
-
-//  printf("Calling get_eui64_addr() Disabled\n");
-//  get_eui64_addr();
-   
-// initialise the serialline input
 
 }
 
@@ -471,6 +381,7 @@ main(void)
     process_run();
     watchdog_periodic();
 
+    
     /* Turn off LED after a while */
     if (ledtimer) {
       if (--ledtimer==0) {
