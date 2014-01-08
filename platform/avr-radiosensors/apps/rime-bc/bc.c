@@ -92,13 +92,61 @@ SHELL_COMMAND( rmask_command,
 
 PROCESS(test_serial, "Serial line test process");
 AUTOSTART_PROCESSES( &init_process,&test_serial, &broadcast_process);
- 
+
+
+
+void print_help_command_menu(){
+
+ printf("\n------------------Command Menu--------------------------------\n") ;
+ printf("\nh\tPrints a list of supported commands\n\t Usage: h\n") ;
+ printf("ri\tSets the report interval\n\t  Usage: ri <period in seconds>\n");
+ printf("tagmask\tSets the report tag mask\n\t       Usage: tagmask <1 byte number representing the mask>\n 
+         tagmask bits correspond to the following tags MSB -> LS,\n| UT | PS | T | T_MCU | V_MCU | UP | V_IN | spare bit |\n") ;
+
+ printf("---------------------------------------------------------------\n\n");
+
+}
+
+/*
+We have a set of tags that identify the data items in each report.
+Tagmask is an 8 bit character whose bits are mapped to the report tags
+and by setting or resetting these bits the report size can be manipuated
+
+         MSB                                          LSB
+   bits:  7    6    5     4      3      2       1      0
+        ---------------------------------------------------
+        | UT | PS | T | T_MCU | V_MCU | UP | V_IN | spare |
+        ---------------------------------------------------
+
+    date time and ID tag is mandatory and it will come in every report
+
+    VALID VALUES:
+        0xFB which enables all these tags.
+        A report set by 0xFB                              
+	2012-05-22 14:07:46 UT=1337688466 ID=283c0cdd030000d7 PS=0 T=30.56  T_MCU=34.6  V_MCU=3.08 UP=2C15C V_IN=4.66 
+*/
+
+// Bitwise structure for mapping the input mask - maneesh
+struct tag_mask {
+	unsigned ut:1 ;
+        unsigned ps:1 ;
+	unsigned t:1 ;
+	unsigned t_mcu:1 ;
+	unsigned v_mcu:1 ;
+	unsigned up:1 ;
+	unsigned v_in:1 ;
+	unsigned spare:1 ;    
+} tagmask ;
+
+unsigned char eui64_addr[8] ;
+
 PROCESS_THREAD(test_serial, ev, data)
 {
    PROCESS_BEGIN();
 
    char delimiter[] = " ";
    char *command = NULL ;
+   char *temp = NULL ;
 
    printf("Process begins for test_serial !! \n") ;
    for(;;) {
@@ -110,17 +158,21 @@ PROCESS_THREAD(test_serial, ev, data)
      if(ev == serial_line_event_message) {
        printf("received line: %s\n", (char *)data);
      } else {
- 	printf("Still no serial_line_event_message: received Event Number = %d\n", ev) ;
+ 	printf("Stil: no serial_line_event_message: received Event Number = %d\n", ev) ;
      }
       
      command = strtok(data, delimiter) ;		
 
      if(!strncmp(command, "h",1)){
-	help_command() ;
-     } else if(!strncmp(command,"ri",2) {
-	report_interval_command() ;
+	print_help_command_menu() ;
+     } else if(!strncmp(command,"ri",2)) {
+	temp = strtok(data, delimiter) ;
+	report_interval = atoi(temp) ;
      } else if(!strncmp(command, "tagmask",7)){
-	tagmask_command() ;
+	temp = strtok(data, delimiter) ;
+        memcpy(&tagmask, atoi(temp[0]))  ; // use the first byte only
+     } else {
+	printf("Invalid command %s. Try h for a list of commands\n", command) ;
      }	// more commands can be added here
 
    }
@@ -271,6 +323,9 @@ PROCESS_THREAD(broadcast_process, ev, data)
   struct broadcast_message msg;
   uint8_t ch, txpwr;
 
+  int index = 0 ;
+  char message_string[150] ;
+
   PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
   PROCESS_BEGIN();
   broadcast_open(&broadcast, 129, &broadcast_call);
@@ -297,9 +352,21 @@ PROCESS_THREAD(broadcast_process, ev, data)
 
     read_sensors();
 
+    
+    // write the EUI64 MAC address to the message
+    index+ = sprintf( message_string , "ID= %2x%2x%2x%2x%2x%2x%2x%2x ", eui64_addr[0],eui64_addr[1], eui64_addr[2],
+                                       eui64_addr[3], eui64_addr[4], eui64_addr[5], eui64_addr[6], eui64_addr[7] ) ;
+    
+    if( tagmask.t_mcu ){
+    	index+ = sprintf((message_string + index), "T_MCU=%-5.1f ",temp);
+    }
+    if( tagmask.v_mcu){
+    	index+ = sprintf((message_string + index), "V_MCU=%-4.2f ", v_avr);
+    }
+    // todo print the other data items as per their tagmasks here !!! - maneesh
+
     // writ the data with tags into the msg.buf
-    len = snprintf((char *) msg.buf, sizeof(msg.buf), 
-		  "T_MCU=%-5.1f V_MCU=%-4.2f ", temp, v_avr);
+    len = snprintf((char *) msg.buf, sizeof(msg.buf), message_string ); 
     
 
 
@@ -344,7 +411,10 @@ PROCESS_THREAD(init_process, ev, data)
   shell_register_command(&rmask_command);
   printf("registered rmask command\n"); 
 #endif 
- 
+
+  get_eui64_addr(eui_addr) ;
+  memcpy(&tagmask,0x18) ; // enable t_mcu, v_mcu tags
+   
   PROCESS_END();
 }
 
