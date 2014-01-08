@@ -97,17 +97,32 @@ PROCESS_THREAD(test_serial, ev, data)
 {
    PROCESS_BEGIN();
 
+   char delimiter[] = " ";
+   char *command = NULL ;
+
    printf("Process begins for test_serial !! \n") ;
    for(;;) {
-
      printf("Waiting for EV = %d to be equal to  serial_line_event_message = %d\n",ev, serial_line_event_message);
      PROCESS_YIELD_UNTIL(ev == serial_line_event_message);
      printf("Serial Line Test Process Polled:  EV = %d\n",ev) ;
+
+// debug prints
      if(ev == serial_line_event_message) {
        printf("received line: %s\n", (char *)data);
      } else {
- 	printf("This shit suxx ev = %d\n", ev) ;
+ 	printf("Still no serial_line_event_message: received Event Number = %d\n", ev) ;
      }
+      
+     command = strtok(data, delimiter) ;		
+
+     if(!strncmp(command, "h",1)){
+	help_command() ;
+     } else if(!strncmp(command,"ri",2) {
+	report_interval_command() ;
+     } else if(!strncmp(command, "tagmask",7)){
+	tagmask_command() ;
+     }	// more commands can be added here
+
    }
    	
    PROCESS_END();
@@ -116,6 +131,9 @@ PROCESS_THREAD(test_serial, ev, data)
 int radio_sleep = 0;
 
 #define RTC_SCALE 30
+
+// Global variable to determine the report interval
+unsigned int report_interval = 10 ;
 
 static void rtcc_init(void)
 {
@@ -136,7 +154,7 @@ ISR(TIMER2_OVF_vect)
   if (--rtc == 0 ) {
     static int i;
     rtc = RTC_SCALE;
-    if(!(i++ % 10)) 
+    if(!(i++ % report_interval)) 
       process_post(&broadcast_process, 0x12, NULL);
   }
 }
@@ -279,8 +297,12 @@ PROCESS_THREAD(broadcast_process, ev, data)
 
     read_sensors();
 
+    // writ the data with tags into the msg.buf
     len = snprintf((char *) msg.buf, sizeof(msg.buf), 
 		  "T_MCU=%-5.1f V_MCU=%-4.2f ", temp, v_avr);
+    
+
+
     msg.seqno = seqno;
     packetbuf_copyfrom(&msg, sizeof(struct broadcast_message));
     
