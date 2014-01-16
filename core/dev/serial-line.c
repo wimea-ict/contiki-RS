@@ -61,12 +61,9 @@ serial_line_input_byte(unsigned char c)
 {
   static uint8_t overflow = 0; /* Buffer overflow: ignore until END */
 
-  PORTE ^= (1<<PE3); //Y LED 
-
   if(IGNORE_CHAR(c)) {
     return 0;
   }
-
   if(!overflow) {
     /* Add character */
     if(ringbuf_put(&rxbuf, c) == 0) {
@@ -82,8 +79,9 @@ serial_line_input_byte(unsigned char c)
   }
 
   /* Wake up consumer process */
-//printf("wake up consumer process\n");
-  process_poll(&serial_line_process);
+
+  process_post(&serial_line_process, 10, NULL);
+  //process_poll(&serial_line_process);
   return 1;
 }
 /*---------------------------------------------------------------------------*/
@@ -105,9 +103,9 @@ PROCESS_THREAD(serial_line_process, ev, data)
     printf("Inside serial_line_process : serial_line_event_message = %d\n", serial_line_event_message);
   
     int c = ringbuf_get(&rxbuf);
-    
+
     if(c == -1) {
-      printf("rxbuf empty, process yeilding\n") ;
+      //printf("rxbuf empty, process yeilding\n") ;
       /* Buffer empty, wait for poll */
       PROCESS_YIELD();
     } else {
@@ -123,7 +121,7 @@ PROCESS_THREAD(serial_line_process, ev, data)
 
         /* Broadcast event */
    
-       printf("Broadcast event serial_line_event_message\n");
+	//printf("Broadcast event serial_line_event_message\n");
        process_post(PROCESS_BROADCAST, serial_line_event_message, buf);
 
         /* Wait until all processes have handled the serial line event */
@@ -142,7 +140,7 @@ PROCESS_THREAD(serial_line_process, ev, data)
 void
 serial_line_init(void)
 {
-  ringbuf_init(&rxbuf, rxbuf_data, sizeof(rxbuf_data));
+   ringbuf_init(&rxbuf, rxbuf_data, sizeof(rxbuf_data));
   process_start(&serial_line_process, NULL);
 }
 /*---------------------------------------------------------------------------*/
