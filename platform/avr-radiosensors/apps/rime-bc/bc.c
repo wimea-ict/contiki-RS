@@ -18,6 +18,8 @@
 #include "lib/random.h"
 #include "net/rime.h"
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 //#include <time.h>
 #include "pin_assignment_v2.3.h"
 #include <avr/io.h>
@@ -100,8 +102,8 @@ void print_help_command_menu(){
  printf("\n------------------Command Menu--------------------------------\n") ;
  printf("\nh\tPrints a list of supported commands\n\t Usage: h\n") ;
  printf("ri\tSets the report interval\n\t  Usage: ri <period in seconds>\n");
- printf("tagmask\tSets the report tag mask\n\t       Usage: tagmask <1 byte number representing the mask>\n 
-         tagmask bits correspond to the following tags MSB -> LS,\n| UT | PS | T | T_MCU | V_MCU | UP | V_IN | spare bit |\n") ;
+ printf("tagmask\tSets the report tag mask\n\t       Usage: tagmask <1 byte number representing the mask>\n");
+ printf("tagmask bits correspond to the following tags MSB -> LS,\n| UT | PS | T | T_MCU | V_MCU | UP | V_IN | spare bit |\n") ;
 
  printf("---------------------------------------------------------------\n\n");
 
@@ -139,6 +141,7 @@ struct tag_mask {
 } tagmask ;
 
 unsigned char eui64_addr[8] ;
+unsigned int report_interval = 5 ;
 
 PROCESS_THREAD(test_serial, ev, data)
 {
@@ -147,6 +150,7 @@ PROCESS_THREAD(test_serial, ev, data)
    char delimiter[] = " ";
    char *command = NULL ;
    char *temp = NULL ;
+   unsigned char  ri = 0 ; 
 
    printf("Process begins for test_serial !! \n") ;
    for(;;) {
@@ -161,7 +165,7 @@ PROCESS_THREAD(test_serial, ev, data)
  	printf("Stil: no serial_line_event_message: received Event Number = %d\n", ev) ;
      }
       
-     command = strtok(data, delimiter) ;		
+     command = (char*)strtok((char*)data, (const char*)delimiter) ;		
 
      if(!strncmp(command, "h",1)){
 	print_help_command_menu() ;
@@ -170,7 +174,8 @@ PROCESS_THREAD(test_serial, ev, data)
 	report_interval = atoi(temp) ;
      } else if(!strncmp(command, "tagmask",7)){
 	temp = strtok(data, delimiter) ;
-        memcpy(&tagmask, atoi(temp[0]))  ; // use the first byte only
+        ri  = atoi(temp[0]) ; 
+        memcpy( (void*)&tagmask, (const void*)&ri , sizeof(ri) )  ; // the tagmask is just 8 bit long ! 
      } else {
 	printf("Invalid command %s. Try h for a list of commands\n", command) ;
      }	// more commands can be added here
@@ -184,8 +189,8 @@ int radio_sleep = 0;
 
 #define RTC_SCALE 30
 
-// Global variable to determine the report interval
-unsigned int report_interval = 10 ;
+
+
 
 static void rtcc_init(void)
 {
@@ -251,7 +256,7 @@ static void broadcast_recv(struct broadcast_conn *c, const rimeaddr_t *from)
   struct neighbor *n;
   struct broadcast_message *msg;
   uint8_t seqno_gap;
-  static uint16_t cnt;
+ 
 
   PORTE &= ~LED_RED;  /* ON */
   msg = packetbuf_dataptr();
@@ -318,7 +323,7 @@ static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
 
 PROCESS_THREAD(broadcast_process, ev, data)
 {
-  static struct etimer et;
+
   static uint8_t seqno;
   struct broadcast_message msg;
   uint8_t ch, txpwr;
@@ -354,14 +359,14 @@ PROCESS_THREAD(broadcast_process, ev, data)
 
     
     // write the EUI64 MAC address to the message
-    index+ = sprintf( message_string , "ID= %2x%2x%2x%2x%2x%2x%2x%2x ", eui64_addr[0],eui64_addr[1], eui64_addr[2],
+    index += sprintf( message_string , "ID= %2x%2x%2x%2x%2x%2x%2x%2x ", eui64_addr[0],eui64_addr[1], eui64_addr[2],
                                        eui64_addr[3], eui64_addr[4], eui64_addr[5], eui64_addr[6], eui64_addr[7] ) ;
     
     if( tagmask.t_mcu ){
-    	index+ = sprintf((message_string + index), "T_MCU=%-5.1f ",temp);
+    	index += sprintf((message_string + index), "T_MCU=%-5.1f ",temp);
     }
     if( tagmask.v_mcu){
-    	index+ = sprintf((message_string + index), "V_MCU=%-4.2f ", v_avr);
+    	index += sprintf((message_string + index), "V_MCU=%-4.2f ", v_avr);
     }
     // todo print the other data items as per their tagmasks here !!! - maneesh
 
@@ -412,13 +417,13 @@ PROCESS_THREAD(init_process, ev, data)
   printf("registered rmask command\n"); 
 #endif 
 
-  get_eui64_addr(eui_addr) ;
-  memcpy(&tagmask,0x18) ; // enable t_mcu, v_mcu tags
+  get_eui64_addr(eui64_addr) ;
+  memset(&tagmask,0x18, 1) ; // enable t_mcu, v_mcu tags
    
   PROCESS_END();
 }
 
-
+#ifdef SHELL_INTERFACE
 PROCESS_THREAD(rint_process, ev, data)
 {
   PROCESS_BEGIN();
@@ -435,6 +440,8 @@ PROCESS_THREAD(rmask_process, ev, data)
   printf("Shell Command \"rmask\" invoked\n") ;
   PROCESS_END() ;
 }
+#endif
+
 
 static struct pt send_thread;
 
