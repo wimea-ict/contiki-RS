@@ -21,7 +21,7 @@
 #include <string.h>
 #include <stdlib.h>
 //#include <time.h>
-#include "pin_assignment_v2.3.h"
+#include "rss2.h"
 #include <avr/io.h>
 #include "shell.h"
 #include "serial-shell.h"
