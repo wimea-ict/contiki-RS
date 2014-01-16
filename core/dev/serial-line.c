@@ -60,7 +60,9 @@ int
 serial_line_input_byte(unsigned char c)
 {
   static uint8_t overflow = 0; /* Buffer overflow: ignore until END */
-  
+
+  PORTE ^= (1<<PE3); //Y LED 
+
   if(IGNORE_CHAR(c)) {
     return 0;
   }

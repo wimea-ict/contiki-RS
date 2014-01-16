@@ -395,12 +395,11 @@ PROCESS_THREAD(init_process, ev, data)
   PROCESS_BEGIN();
 
   printf("Init\n");
-  DDRE |= (1<<LED_YELLOW);
-  DDRE |= (1<<LED_RED);
+  DDRE |= LED_YELLOW;
+  DDRE |= LED_RED;
 
-  //PORTE |= LED_RED; 
-  //PORTE |= LED_YELLOW; 
- //PORTE &= ~LED_YELLOW; /* On */
+  PORTE |= LED_RED; 
+  PORTE |= LED_YELLOW; 
 
   DDRD |= (1<<4);
 

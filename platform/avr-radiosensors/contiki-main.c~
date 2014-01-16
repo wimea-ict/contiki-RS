@@ -5,7 +5,7 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 1. Redistributions of source cod e must retain the above copyright
+ * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
@@ -242,22 +242,20 @@ bool get_eui64_addr(uint8_t *addr_array){
 /*------Done in a subroutine to keep main routine stack usage small--------*/
 void initialize(void)
 {
-
-  rimeaddr_t addr;
-  
-
-  get_eui64_addr(addr.u8) ; 
-
-  rs232_init(RS232_PORT_0, USART_BAUD_38400,USART_PARITY_NONE | USART_STOP_BITS_1 | USART_DATA_BITS_8);
+//  rs232_init(RS232_PORT_0, USART_BAUD_38400,USART_PARITY_NONE | USART_STOP_BITS_1 | USART_DATA_BITS_8);
 
   UBRR0L = 25;
   UBRR0H = 0;
   UCSR0A = (1<<U2X0);  /*Double */
-  UCSR0B = (1<<RXCIE0)|(1<<TXEN0)|(1<<RXEN0);	
 
+  rimeaddr_t addr;
+  
+
+  rs232_redirect_stdout(RS232_PORT_0); 
+
+  get_eui64_addr(addr.u8) ;
+  
   rs232_set_input(RS232_PORT_0 , serial_line_input_byte) ; 
- 
-  rs232_redirect_stdout(RS232_PORT_0);
  
   serial_line_init();
 

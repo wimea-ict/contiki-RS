@@ -220,8 +220,6 @@ int (* input_handler_0)(unsigned char);
 ISR(D_USART0_RX_vect)
 {
   unsigned char c;
-
-  PORTE &= ~(1<<PE4); //R LED
   c = D_UDR0;
   if (input_handler_0 != NULL) input_handler_0(c);
 }
