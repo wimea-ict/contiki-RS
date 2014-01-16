@@ -207,8 +207,8 @@ static void rtcc_init(void)
 ISR(TIMER2_OVF_vect)
 { 
   static int rtc = RTC_SCALE;
-  PORTE |= (1<<PE4);
-  PORTE |= (1<<PE3);
+  PORTE |= (1<<LED_RED);
+  PORTE |= (1<<LED_YELLOW);
   if (--rtc == 0 ) {
     static int i;
     rtc = RTC_SCALE;
@@ -354,7 +354,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
     //PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
     PROCESS_YIELD_UNTIL(ev == 0x12);
 
-    PORTE &= ~LED_YELLOW; /* On */
+    //PORTE &= ~(1<<LED_YELLOW); /* On */
 
     read_sensors();
 
@@ -385,7 +385,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
    
     printf("&: %s\n", msg.buf);
 
-    PORTE |= LED_YELLOW; 
+    PORTE |= (1<<LED_YELLOW); 
   }
   PROCESS_END();
 }
