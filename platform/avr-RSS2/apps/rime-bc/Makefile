@@ -22,5 +22,5 @@ include $(CONTIKI)/Makefile.include
 all: hex bc 
 
 hex :
-	$(OBJCOPY) bc.avr-radiosensors -j .text -j .data -O ihex bc.hex
+	$(OBJCOPY) bc.avr-RSS2 -j .text -j .data -O ihex bc.hex
 
