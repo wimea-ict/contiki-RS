@@ -2,7 +2,7 @@
   Contiki Rime BRD demo.
   Broadcast Temp, Bat Voltage, RSSI, LQI DEMO. Robert Olsson <robert@herjulf.se>
 
-  Almost all code comes from:
+  Heavily based on code from:
 
  * Copyright (c) 2007, Swedish Institute of Computer Science.
  * All rights reserved.
@@ -36,10 +36,25 @@ uint16_t h,m;
 double v_avr;
 double temp;
 
+#define MAX_BCAST_SIZE 99
+
 struct broadcast_message {
+  uint8_t head; /* version << 4 + ttl */
   uint8_t seqno;
-  uint8_t buf[40];
+  uint8_t buf[MAX_BCAST_SIZE+20];  /* Check for max payload 20 extra to be able to test */
 };
+
+#define DEF_TTL 0xF
+uint8_t  ttl = DEF_TTL;
+
+#define DEF_CHAN 26
+
+struct {
+  uint16_t sent;
+  uint16_t dup;
+  uint16_t ignored;
+  uint16_t ttl_zero;
+} relay_stats;
 
 struct neighbor {
   struct neighbor *next;
@@ -257,10 +272,26 @@ static void broadcast_recv(struct broadcast_conn *c, const rimeaddr_t *from)
   struct neighbor *n;
   struct broadcast_message *msg;
   uint8_t seqno_gap;
- 
+  uint8_t relay = 1;   /* Default on */
 
   PORTE &= ~LED_RED;  /* ON */
   msg = packetbuf_dataptr();
+
+  if((msg->head >> 4) != 1 || (msg->head & 0xF) == 0) {
+    relay = 0;
+    relay_stats.ignored++;
+    goto out;
+  }
+
+  /* From our own address. Can happen if we receive own pkt via relay
+     Ignore
+  */
+
+  if(rimeaddr_cmp(&rimeaddr_node_addr, from)) {
+    relay = 0;
+    relay_stats.ignored++;
+    goto out;
+  }
 
   /* Check if we already know this neighbor. */
   for(n = list_head(neighbors_list); n != NULL; n = list_item_next(n)) {
@@ -295,15 +326,14 @@ static void broadcast_recv(struct broadcast_conn *c, const rimeaddr_t *from)
 
   n->last_seqno = msg->seqno;
 
-  printf("&: %s [ADDR=%-d.%-d SEQ=%-d RSSI=%-u LQI=%-u DRP=%-d.%02d]\n",
+  printf("&: %s [ADDR=%-d.%-d SEQ=%-d TTL=%-u RSSI=%-u LQI=%-u DRP=%-d.%02d]\n",
 	 msg->buf,
-         from->u8[0], from->u8[1], msg->seqno,
-         n->last_rssi,
-         n->last_lqi, 
-         (int)(n->avg_seqno_gap / SEQNO_EWMA_UNITY),
-         (int)(((100UL * n->avg_seqno_gap) / SEQNO_EWMA_UNITY) % 100));
+	 from->u8[0], from->u8[1], msg->seqno, msg->head & 0xF,
+	 n->last_rssi,
+	 n->last_lqi, 
+	 (int)(n->avg_seqno_gap / SEQNO_EWMA_UNITY),
+	 (int)(((100UL * n->avg_seqno_gap) / SEQNO_EWMA_UNITY) % 100));
 
-  PORTE |= LED_RED;  /* OFF */
 out:
   PORTE |= LED_RED;  /* OFF */
 }
@@ -329,23 +359,19 @@ PROCESS_THREAD(broadcast_process, ev, data)
   struct broadcast_message msg;
   uint8_t ch, txpwr;
 
-  int index = 0 ;
-  char message_string[150] ;
-
   PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
   PROCESS_BEGIN();
   broadcast_open(&broadcast, 129, &broadcast_call);
 
   //rf230_set_txpower(15);
   txpwr = rf230_get_txpower();
-  ch = rf230_get_channel();
-  // rf230_set_channel(ch);
+  //ch = rf230_get_channel();
+  ch = DEF_CHAN;
+  rf230_set_channel(ch);
   printf("Ch=%-d TxPwr=%-d\n", ch, txpwr);
 
-  
 // Just read the EUI64 address and the serial number from the at24mac chip
 //  at24mac_read(1,1,0) ;
-
 
   while(1) {
     int len;
@@ -354,35 +380,34 @@ PROCESS_THREAD(broadcast_process, ev, data)
     //PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
     PROCESS_YIELD_UNTIL(ev == 0x12);
 
-    //PORTE &= ~(1<<LED_YELLOW); /* On */
+    PORTE &= ~(1<<LED_YELLOW); /* On */
 
     read_sensors();
 
+    len = 0;
     
     // write the EUI64 MAC address to the message
-    index += sprintf( message_string , "ID= %2x%2x%2x%2x%2x%2x%2x%2x ", eui64_addr[0],eui64_addr[1], eui64_addr[2],
+    len += sprintf(&msg.buf[len] , "E64=%02x%02x%02x%02x%02x%02x%02x%02x ", eui64_addr[0],eui64_addr[1], eui64_addr[2],
                                        eui64_addr[3], eui64_addr[4], eui64_addr[5], eui64_addr[6], eui64_addr[7] ) ;
     
     if( tagmask.t_mcu ){
-    	index += sprintf((message_string + index), "T_MCU=%-5.1f ",temp);
+    	len += sprintf(&msg.buf[len], "T_MCU=%-5.1f ",temp);
     }
     if( tagmask.v_mcu){
-    	index += sprintf((message_string + index), "V_MCU=%-4.2f ", v_avr);
+    	len += sprintf(&msg.buf[len], "V_MCU=%-4.2f ", v_avr);
     }
     // todo print the other data items as per their tagmasks here !!! - maneesh
+    msg.buf[len++] = 0;
+    packetbuf_copyfrom(&msg, len+2);
 
-    // writ the data with tags into the msg.buf
-    len = snprintf((char *) msg.buf, sizeof(msg.buf), message_string ); 
-    
-
-
+    msg.head = 1<<4; /* Version 1 */
+    msg.head |= ttl;;
     msg.seqno = seqno;
-    packetbuf_copyfrom(&msg, sizeof(struct broadcast_message));
+
     
     broadcast_send(&broadcast);
-
     seqno++;
-   
+    
     printf("&: %s\n", msg.buf);
 
     PORTE |= (1<<LED_YELLOW); 
