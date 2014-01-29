@@ -152,10 +152,6 @@ rng_get_uint8(void) {
 }
 
 
-
-/*------------Subroutine to read EUI64 address from AT24MAC602 chip----------*/
-/*-------- return true on successful read and fale on failure ---------------*/
-
 #define AT24MAC602_DEV_ADDR 0xB0
 #define EUI64_ADDR_LOC   0x98
 #define SIZE_OF_EUI64_ADDR 8
@@ -163,22 +159,20 @@ rng_get_uint8(void) {
 
 void probe_i2c_bus(){
      uint8_t ret = 0 ;
-     uint8_t temp_addr = 0 ;
-     for( ; temp_addr < 255 ; ++temp_addr){ 
-     	ret =  i2c_start(AT24MAC602_DEV_ADDR+I2C_WRITE) ;     // set device address and write mode
-     
-     	if( !ret ){
-     	//   i2c_stop() ;
-        	printf("\nSlave Dev Found at Addr %2x\n", temp_addr) ;
-		i2c_stop() ;
-        }
+     printf("Probing I2C: \n");	
+     ret =  i2c_start(AT24MAC602_DEV_ADDR+I2C_WRITE) ;  // set device address and write mode
+     if( !ret ){
+       printf("AT24MAC60 ") ;
+       i2c_stop() ;
      }
 }
 
-bool get_eui64_addr(uint8_t *addr_array){
-     
 
-   
+/*------------Function to read EUI64 address from AT24MAC602 chip----------*/
+/*-------- return true on successful read and fale on failure ---------------*/
+
+bool get_eui64_addr(uint8_t *addr_array){
+
      uint8_t ret = 0 ; 	
      uint8_t i = 0 ;
     //uint8_t addr_array[SIZE_OF_EUI64_ADDR] ;
@@ -191,7 +185,6 @@ bool get_eui64_addr(uint8_t *addr_array){
 
      probe_i2c_bus() ;
      
-     printf("$I2C Init\n");	
 /*
      // write 0x75 to EEPROM address 5 (Byte Write) 
      i2c_start_wait(AT24MAC602_DEV_ADDR+I2C_WRITE);     // set device address and write mode
@@ -219,10 +212,10 @@ bool get_eui64_addr(uint8_t *addr_array){
      		printf("\n********EUI64 ADDR : ") ;
      		for( i = 0 ; i < SIZE_OF_EUI64_ADDR-1 ; ++i){
 			addr_array[i] = i2c_readAck() ;
-			printf("%2X ",addr_array[i]) ;
+			printf("%02x ",addr_array[i]) ;
     	 	}
      		addr_array[i] = i2c_readNak();                    // read one byte from EEPROM
-     		printf("%2X ********\n",addr_array[i]); 
+     		printf("%02x ********\n",addr_array[i]); 
      		i2c_stop();
 	  }else{
 		printf("Device not found\n"); 
@@ -232,8 +225,6 @@ bool get_eui64_addr(uint8_t *addr_array){
 	  printf("I2C_WRITE: Failed to write %2X\n",EUI64_ADDR_LOC) ;
 	}
      }
-    // for(;;);
-     
       return true ;
 } 
 
