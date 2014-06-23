@@ -237,8 +237,6 @@ void initialize(void)
   rimeaddr_t addr;
   
 
-  get_eui64_addr(addr.u8) ; 
-
   rs232_init(RS232_PORT_0, USART_BAUD_38400,USART_PARITY_NONE | USART_STOP_BITS_1 | USART_DATA_BITS_8);
 
   UBRR0L = 25;
@@ -253,6 +251,8 @@ void initialize(void)
   serial_line_init();
 
   clock_init();
+
+  get_eui64_addr(addr.u8) ; 
 
   if(MCUSR & (1<<PORF )) PRINTD("Power-on reset.\n");
   if(MCUSR & (1<<EXTRF)) PRINTD("External reset!\n");
