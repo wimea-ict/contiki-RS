@@ -347,6 +347,7 @@ enum {
   PACKETBUF_ATTR_MAX_MAC_TRANSMISSIONS,
   PACKETBUF_ATTR_MAC_SEQNO,
   PACKETBUF_ATTR_MAC_ACK,
+  PACKETBUF_ATTR_CRC_OK,
 
   /* Scope 1 attributes: used between two neighbors only. */
   PACKETBUF_ATTR_RELIABLE,

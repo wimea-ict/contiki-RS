@@ -69,6 +69,10 @@
 
 #include "sys/timetable.h"
 
+#ifndef ALLOW_BAD_CRC
+#define ALLOW_BAD_CRC 0
+#endif
+
 #define WITH_SEND_CCA 0
 
 /* Timestamps have not been tested */
@@ -1498,8 +1502,12 @@ rf230_read(void *buf, unsigned short bufsize)
     //  checksum, crc16_data(buf, len - AUX_LEN, 0));
   }
 #if FOOTER_LEN
+#if ALLOW_BAD_CRC
+  if(1) {
+#else
   if(footer[1] & FOOTER1_CRC_OK &&
      checksum == crc16_data(buf, len - AUX_LEN, 0)) {
+#endif
 #endif
 #endif /* RF230_CONF_CHECKSUM */
 
@@ -1523,6 +1531,11 @@ rf230_read(void *buf, unsigned short bufsize)
  //   rf230_last_correlation = rxframe[rxframe_head].lqi;
     packetbuf_set_attr(PACKETBUF_ATTR_RSSI, rf230_last_rssi);
     packetbuf_set_attr(PACKETBUF_ATTR_LINK_QUALITY, rf230_last_correlation);
+#if FOOTER_LEN
+    packetbuf_set_attr(PACKETBUF_ATTR_CRC_OK, footer[1] & FOOTER1_CRC_OK);
+#else
+    packetbuf_set_attr(PACKETBUF_ATTR_CRC_OK, 1);
+#endif
 
     RIMESTATS_ADD(rx);
 

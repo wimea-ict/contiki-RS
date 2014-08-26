@@ -4,6 +4,8 @@ ifndef CONTIKI
   ${error CONTIKI not defined! You must specify where CONTIKI resides}
 endif
 
+TARGET ?= avr-RSS2
+
 ifeq ($(TARGET),)
   -include Makefile.target
   ifeq ($(TARGET),)

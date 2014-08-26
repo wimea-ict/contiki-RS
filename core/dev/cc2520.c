@@ -45,6 +45,10 @@
 #include "sys/timetable.h"
 #include <string.h>
 
+#ifndef ALLOW_BAD_CRC
+#define ALLOW_BAD_CRC 0
+#endif
+
 #ifndef CC2520_CONF_AUTOACK
 #define CC2520_CONF_AUTOACK 0
 #endif /* CC2520_CONF_AUTOACK */
@@ -687,13 +691,18 @@ cc2520_read(void *buf, unsigned short bufsize)
   getrxdata(buf, len - FOOTER_LEN);
   getrxdata(footer, FOOTER_LEN);
 
+#if ALLOW_BAD_CRC
+  if(1) {
+#else
   if(footer[1] & FOOTER1_CRC_OK) {
+#endif
     cc2520_last_rssi = footer[0];
     cc2520_last_correlation = footer[1] & FOOTER1_CORRELATION;
 
 
     packetbuf_set_attr(PACKETBUF_ATTR_RSSI, cc2520_last_rssi);
     packetbuf_set_attr(PACKETBUF_ATTR_LINK_QUALITY, cc2520_last_correlation);
+    packetbuf_set_attr(PACKETBUF_ATTR_CRC_OK, footer[1] & FOOTER1_CRC_OK);
 
     RIMESTATS_ADD(llrx);
 

@@ -52,6 +52,10 @@
 
 #include "sys/timetable.h"
 
+#ifndef ALLOW_BAD_CRC
+#define ALLOW_BAD_CRC 0
+#endif
+
 #define WITH_SEND_CCA 1
 
 #define FOOTER_LEN 2
@@ -720,7 +724,11 @@ cc2420_read(void *buf, unsigned short bufsize)
   if(footer[1] & FOOTER1_CRC_OK &&
      checksum == crc16_data(buf, len - AUX_LEN, 0)) {
 #else
+#if ALLOW_BAD_CRC
+  if(1) {
+#else
   if(footer[1] & FOOTER1_CRC_OK) {
+#endif
 #endif /* CC2420_CONF_CHECKSUM */
     cc2420_last_rssi = footer[0];
     cc2420_last_correlation = footer[1] & FOOTER1_CORRELATION;
@@ -728,6 +736,7 @@ cc2420_read(void *buf, unsigned short bufsize)
 
     packetbuf_set_attr(PACKETBUF_ATTR_RSSI, cc2420_last_rssi);
     packetbuf_set_attr(PACKETBUF_ATTR_LINK_QUALITY, cc2420_last_correlation);
+    packetbuf_set_attr(PACKETBUF_ATTR_CRC_OK, footer[1] & FOOTER1_CRC_OK);
 
     RIMESTATS_ADD(llrx);
 
