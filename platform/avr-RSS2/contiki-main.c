@@ -252,7 +252,7 @@ void initialize(void)
 
   clock_init();
 
-  get_eui64_addr(addr.u8) ; 
+  //get_eui64_addr(addr.u8) ; 
 
   if(MCUSR & (1<<PORF )) PRINTD("Power-on reset.\n");
   if(MCUSR & (1<<EXTRF)) PRINTD("External reset!\n");
