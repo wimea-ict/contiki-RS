@@ -11,6 +11,7 @@
 */
 
 #include <avr/sleep.h>
+#include <avr/wdt.h>
 #include "contiki.h"
 #include "contiki-net.h"
 #include "lib/list.h"
@@ -29,6 +30,7 @@
 
 #define MAX_NEIGHBORS 64
 #define SIZE          40
+#define SHELL_INTERFACE 1
 
 unsigned char charbuf[SIZE];
 
@@ -86,6 +88,7 @@ PROCESS(broadcast_process, "Broadcast process");
  * 1. The Report Interval Command rint <n> where n represents periodicity in seconds 
  * 2. The Report Mask command rmask <n> where n represents the 8 bit mask for data fields
  *    in the broadcast report   
+ * 3. The upgrade command upgr initializing the bootloader
 */
 
 #ifdef SHELL_INTERFACE
@@ -100,6 +103,14 @@ SHELL_COMMAND( rmask_command,
                "rmask", 
                "rmask <number> [Here the \"number\" denotes the 8 bit mask for the data fields in the Sensor Report]",
                &rmask_process) ;
+
+PROCESS(upgr_process , "Bootloader Start");
+
+SHELL_COMMAND( upgr_command, 
+               "upgr", 
+               "upgr  [Starts the bootloader]", 
+               &upgr_process) ;
+
 #endif
 
 /* -----------------------------------------------------------------------------------------------------------------*/
@@ -119,7 +130,7 @@ void print_help_command_menu(){
  printf("ri\tSets the report interval\n\t  Usage: ri <period in seconds>\n");
  printf("tagmask\tSets the report tag mask\n\t       Usage: tagmask <1 byte number representing the mask>\n");
  printf("tagmask bits correspond to the following tags MSB -> LS,\n| UT | PS | T | T_MCU | V_MCU | UP | V_IN | spare bit |\n") ;
-
+ printf("upgr\tInitiates bootloader\n\t  Usage: upgr\n");
  printf("---------------------------------------------------------------\n\n");
 
 }
@@ -442,6 +453,8 @@ PROCESS_THREAD(init_process, ev, data)
   printf("registered rint command\n");
   shell_register_command(&rmask_command);
   printf("registered rmask command\n"); 
+  shell_register_command(&upgr_command);
+  printf("registered upgr command\n");
 #endif 
 
   get_eui64_addr(eui64_addr) ;
@@ -463,10 +476,19 @@ PROCESS_THREAD(rint_process, ev, data)
 PROCESS_THREAD(rmask_process, ev, data)
 {
   PROCESS_BEGIN();
-  
   printf("Shell Command \"rmask\" invoked\n") ;
   PROCESS_END() ;
 }
+
+PROCESS_THREAD(upgr_process, ev, data)
+{
+  PROCESS_BEGIN();
+  printf("OK!\n");
+  wdt_enable(WDTO_15MS);
+  while (1);
+  PROCESS_END() ; 
+}
+
 #endif
 
 
