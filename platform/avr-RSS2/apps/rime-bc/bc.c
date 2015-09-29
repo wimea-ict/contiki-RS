@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <string.h>
+
 //#include <time.h>
 #include "rss2.h"
 #include <avr/io.h>
@@ -33,6 +35,9 @@
 #define SHELL_INTERFACE 1
 
 unsigned char charbuf[SIZE];
+
+#define END_OF_FILE 26
+uint8_t eof = END_OF_FILE;
 
 uint16_t h,m;
 double v_avr;
@@ -484,6 +489,7 @@ PROCESS_THREAD(upgr_process, ev, data)
 {
   PROCESS_BEGIN();
   printf("OK!\n");
+  printf("%c", eof);
   wdt_enable(WDTO_15MS);
   while (1);
   PROCESS_END() ; 
