@@ -488,7 +488,7 @@ PROCESS_THREAD(rmask_process, ev, data)
 PROCESS_THREAD(upgr_process, ev, data)
 {
   PROCESS_BEGIN();
-  printf("OK!\n");
+  printf("OK\n");
   printf("%c", eof);
   wdt_enable(WDTO_15MS);
   while (1);
