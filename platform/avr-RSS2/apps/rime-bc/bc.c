@@ -118,14 +118,12 @@ SHELL_COMMAND( upgr_command,
 
 #endif
 
-/* -----------------------------------------------------------------------------------------------------------------*/
 
 //AUTOSTART_PROCESSES(&init_process, &broadcast_process);
 
 
 PROCESS(test_serial, "Serial line test process");
 AUTOSTART_PROCESSES( &init_process,&test_serial, &broadcast_process);
-
 
 
 void print_help_command_menu(){
@@ -183,7 +181,6 @@ PROCESS_THREAD(test_serial, ev, data)
    char *temp = NULL ;
    unsigned char  ri = 0 ; 
 
-   printf("Process begins for test_serial !! \n") ;
    for(;;) {
      printf("Waiting for EV = %d to be equal to  serial_line_event_message = %d\n",ev, serial_line_event_message);
      PROCESS_YIELD_UNTIL(ev == serial_line_event_message);
