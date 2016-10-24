@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Swedish Institute of Computer Science.
+ * Copyright (c) 2015, Copyright Robert Olsson / Radio Sensors AB
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,61 +28,16 @@
  *
  * This file is part of the Contiki operating system.
  *
+ *
+ * Author  : Robert Olsson robert@radio-sensors.com
+ * Created : 2015-11-22
  */
 
-/**
- * \file
- *         Reboot Contiki shell command
- * \author
- *         Adam Dunkels <adam@sics.se>
- */
+#ifndef PULSE_SENSOR_H_
+#define PULSE_SENSOR_H_
 
-#include "contiki.h"
-#include "shell.h"
-#include "dev/leds.h"
-#include "dev/watchdog.h"
+#include "lib/sensors.h"
 
-#include <stdio.h>
-#include <string.h>
+extern const struct sensors_sensor pulse_sensor;
 
-/*---------------------------------------------------------------------------*/
-PROCESS(shell_reboot_process, "reboot");
-SHELL_COMMAND(reboot_command,
-	      "reboot",
-	      "reboot: reboot the system",
-	      &shell_reboot_process);
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(shell_reboot_process, ev, data)
-{
-  static struct etimer etimer;
-
-  PROCESS_EXITHANDLER(leds_off(LEDS_ALL);)
-  
-  PROCESS_BEGIN();
-
-  shell_output_str(&reboot_command,
-		   "Rebooting the node in four seconds...", "");
-
-  etimer_set(&etimer, CLOCK_SECOND);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_RED);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_GREEN);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_RED);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  
-  watchdog_reboot();
-
-  PROCESS_END();
-}
-/*---------------------------------------------------------------------------*/
-void
-shell_reboot_init(void)
-{
-  shell_register_command(&reboot_command);
-}
-/*---------------------------------------------------------------------------*/
+#endif /* PULSE-SENSOR_H_ */

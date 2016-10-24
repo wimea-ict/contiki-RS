@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Swedish Institute of Computer Science.
+ * Copyright (c) 2015, Copyright Markus Hidell, Robert Olsson
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,61 +28,24 @@
  *
  * This file is part of the Contiki operating system.
  *
+ *
+ * Authors  : Markus Hidell, Robert Olsson  {mahidell, roolss} @kth.se
+ * Created : 2015-10-27
+ * Updated : $Date: 2010/01/14 20:23:02 $
+ *           $Revision: 1.2 $
  */
 
-/**
- * \file
- *         Reboot Contiki shell command
- * \author
- *         Adam Dunkels <adam@sics.se>
- */
+#ifndef CO2_SA_KXX_SENSOR_H_
+#define CO2_SA_KXX_SENSOR_H_
 
-#include "contiki.h"
-#include "shell.h"
-#include "dev/leds.h"
-#include "dev/watchdog.h"
+#define CO2_SA_KXX_CO2  0
+#define CO2_SA_KXX_TEMP 1
+#define CO2_SA_KXX_RH   3
 
-#include <stdio.h>
-#include <string.h>
+#include "lib/sensors.h"
 
-/*---------------------------------------------------------------------------*/
-PROCESS(shell_reboot_process, "reboot");
-SHELL_COMMAND(reboot_command,
-	      "reboot",
-	      "reboot: reboot the system",
-	      &shell_reboot_process);
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(shell_reboot_process, ev, data)
-{
-  static struct etimer etimer;
+extern const struct sensors_sensor co2_sa_kxx_sensor;
 
-  PROCESS_EXITHANDLER(leds_off(LEDS_ALL);)
-  
-  PROCESS_BEGIN();
+#define I2C_CO2SA_ADDR (0x68 << 1)
 
-  shell_output_str(&reboot_command,
-		   "Rebooting the node in four seconds...", "");
-
-  etimer_set(&etimer, CLOCK_SECOND);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_RED);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_GREEN);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_RED);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  
-  watchdog_reboot();
-
-  PROCESS_END();
-}
-/*---------------------------------------------------------------------------*/
-void
-shell_reboot_init(void)
-{
-  shell_register_command(&reboot_command);
-}
-/*---------------------------------------------------------------------------*/
+#endif /* CO2_SA_KXX-SENSOR_H_ */

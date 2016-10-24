@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Swedish Institute of Computer Science.
+ * Copyright (c) 2015, Copyright Per Lindgren <per.o.lindgren@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,61 +28,44 @@
  *
  * This file is part of the Contiki operating system.
  *
+ *
+ * Author   : Per Lindgren <per.o.lindgren@gmail.com>
+ * Hacked by: Robert Olsson robert@radio-sensors.com
+ * Created : 2015-11-22
  */
 
-/**
- * \file
- *         Reboot Contiki shell command
- * \author
- *         Adam Dunkels <adam@sics.se>
- */
+#ifndef TEMP_SENSOR_H_
+#define TEMP_SENSOR_H_
 
+#include "lib/sensors.h"
+#include <sys/clock.h>
 #include "contiki.h"
-#include "shell.h"
-#include "dev/leds.h"
-#include "dev/watchdog.h"
+#include "rss2.h"
 
-#include <stdio.h>
-#include <string.h>
+#define DS18B20_1_PIN OW_BUS_0
+#define DS18B20_1_IN  PIND
+#define DS18B20_1_OUT PORTD
+#define DS18B20_1_DDR DDRD
 
-/*---------------------------------------------------------------------------*/
-PROCESS(shell_reboot_process, "reboot");
-SHELL_COMMAND(reboot_command,
-	      "reboot",
-	      "reboot: reboot the system",
-	      &shell_reboot_process);
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(shell_reboot_process, ev, data)
-{
-  static struct etimer etimer;
+#define OW_SET_PIN_LOW()   (DS18B20_1_OUT &= ~(1 << DS18B20_1_PIN))
+#define OW_SET_PIN_HIGH()  (DS18B20_1_OUT |= (1 << DS18B20_1_PIN))
+#define OW_SET_OUTPUT()    (DS18B20_1_DDR |= (1 << DS18B20_1_PIN))
+#define OW_SET_INPUT()     (DS18B20_1_DDR &= ~(1 << DS18B20_1_PIN))
+#define OW_GET_PIN_STATE() ((DS18B20_1_IN & (1 << DS18B20_1_PIN)) ? 1 : 0)
 
-  PROCESS_EXITHANDLER(leds_off(LEDS_ALL);)
-  
-  PROCESS_BEGIN();
+#define DS18B20_COMMAND_READ_SCRATCH_PAD 0xBE
+#define DS18B20_COMMAND_START_CONVERSION 0x44
+#define DS18B20_COMMAND_SKIP_ROM 0xCC
 
-  shell_output_str(&reboot_command,
-		   "Rebooting the node in four seconds...", "");
+/* probe_for_ds18b20 probes for the sensor. Returns 0 on failure, 1 on success
+ * Assumption: only one sensor on the "1-wire bus", on port DS18B20_1_PIN */
 
-  etimer_set(&etimer, CLOCK_SECOND);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_RED);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_GREEN);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_RED);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  
-  watchdog_reboot();
+extern uint8_t ds18b20_probe(void);
+extern uint8_t  ds18b20_get_temp(double *temp);
+extern uint8_t crc8_ds18b20(uint8_t *buf, uint8_t buf_len);
 
-  PROCESS_END();
-}
-/*---------------------------------------------------------------------------*/
-void
-shell_reboot_init(void)
-{
-  shell_register_command(&reboot_command);
-}
-/*---------------------------------------------------------------------------*/
+extern const struct sensors_sensor temp_sensor;
+
+#define TEMP_SENSOR "temp"
+
+#endif /* TEMP_SENSOR_H_ */

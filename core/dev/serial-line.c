@@ -100,7 +100,7 @@ PROCESS_THREAD(serial_line_process, ev, data)
   while(1) {
     /* Fill application buffer until newline or empty */
     
-    printf("Inside serial_line_process : serial_line_event_message = %d\n", serial_line_event_message);
+   // printf("Inside serial_line_process : serial_line_event_message = %d\n", serial_line_event_message);
   
     int c = ringbuf_get(&rxbuf);
 

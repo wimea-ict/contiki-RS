@@ -1,8 +1,13 @@
-CONTIKI_TARGET_DIRS = . apps net loader
+CONTIKI_TARGET_DIRS = . apps net loader dev
 
 CONTIKI_CORE=contiki-main
 CONTIKI_TARGET_MAIN = ${CONTIKI_CORE}.o
-CONTIKI_TARGET_SOURCEFILES += contiki-main.c params.c twimaster.c
+CONTIKI_TARGET_SOURCEFILES += contiki-main.c params.c twimaster.c 
+
+#to include the sensor files
+CONTIKI_TARGET_SOURCEFILES += leds.c temp_mcu-sensor.c light-sensor.c adc.c cfs-eeprom.c eeprom.c pulse-sensor.c 
+
+CONTIKI_TARGET_SOURCEFILES += temp-sensor.c
 #Needed for slip
 #CONTIKI_TARGET_SOURCEFILES += button-sensor.c sensors.c slip_uart0.c slip.c
 

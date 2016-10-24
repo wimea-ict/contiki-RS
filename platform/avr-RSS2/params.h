@@ -30,6 +30,17 @@
 #define settings_add_uint16(...) 0
 #endif
 
+/*For the transmission parameters
+ * Added by Mary Nsabagwa to support the wimea-ict application
+*/
+//extern uint8_t eemem_transmission_interval[8];
+
+#ifdef TRANSMISSION_INTERVAL
+#define TRANSMISSION_INTERVAL TRANSMISSION_INTERVAL
+#else
+#define TRANSMISSION_INTERVAL 60
+#endif
+
 #if AVR_WEBSERVER
 /* Webserver builds can set some defaults in httpd-fsdata.c via makefsdata.h */
 extern uint8_t eemem_mac_address[8];
@@ -103,6 +114,7 @@ uint8_t params_get_channel(void);
 uint16_t params_get_panid(void);
 uint16_t params_get_panaddr(void);
 uint8_t params_get_txpower(void);
+uint8_t params_get_transmission_interval(void);
 #endif
 
 #endif /* __PARAMS_H__ */

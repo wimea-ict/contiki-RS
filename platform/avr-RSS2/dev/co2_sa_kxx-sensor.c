@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Swedish Institute of Computer Science.
+ * Copyright (c) 2015, Copyright Markus Hidell, Robert Olsson
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,61 +28,99 @@
  *
  * This file is part of the Contiki operating system.
  *
- */
-
-/**
- * \file
- *         Reboot Contiki shell command
- * \author
- *         Adam Dunkels <adam@sics.se>
+ *
+ * Authors  : Markus Hidell, Robert Olsson  {mahidell, roolss} @kth.se
+ * Created : 2015-10-27
+ * Updated : $Date: 2010/01/14 20:23:02 $
+ *           $Revision: 1.2 $
  */
 
 #include "contiki.h"
-#include "shell.h"
-#include "dev/leds.h"
-#include "dev/watchdog.h"
-
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <i2c.h>
+#include <avr/pgmspace.h>
+#include <avr/sleep.h>
+#include <avr/wdt.h>
+#include <avr/boot.h>
+#include <avr/eeprom.h>
+#include "dev/watchdog.h"
+#include "lib/list.h"
+#include "lib/memb.h"
+#include "co2_sa_kxx-sensor.h"
 
-/*---------------------------------------------------------------------------*/
-PROCESS(shell_reboot_process, "reboot");
-SHELL_COMMAND(reboot_command,
-	      "reboot",
-	      "reboot: reboot the system",
-	      &shell_reboot_process);
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(shell_reboot_process, ev, data)
+static int
+status(int type)
 {
-  static struct etimer etimer;
-
-  PROCESS_EXITHANDLER(leds_off(LEDS_ALL);)
-  
-  PROCESS_BEGIN();
-
-  shell_output_str(&reboot_command,
-		   "Rebooting the node in four seconds...", "");
-
-  etimer_set(&etimer, CLOCK_SECOND);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_RED);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_GREEN);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_RED);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  
-  watchdog_reboot();
-
-  PROCESS_END();
+  return 0;
 }
-/*---------------------------------------------------------------------------*/
-void
-shell_reboot_init(void)
+static int
+configure(int type, int c)
 {
-  shell_register_command(&reboot_command);
+  return 0;
 }
-/*---------------------------------------------------------------------------*/
+static int
+value(int var)
+{
+  int val, status;
+  uint8_t buf[2], csum;
+  int16_t res;
+  (void) status;
+  (void) csum;
+
+  res = 0;
+  i2c_start(I2C_CO2SA_ADDR | I2C_WRITE);
+  if(res) {
+    goto err;
+  }
+
+  i2c_write(0x22);
+  i2c_write(0x00);
+
+  if(var == CO2_SA_KXX_CO2) {
+    i2c_write(0x08);
+    i2c_write(0x2A);
+  }
+
+  if(var == CO2_SA_KXX_TEMP) {
+    i2c_write(0x12);
+    i2c_write(0x34);
+  }
+
+  if(var == CO2_SA_KXX_RH) {
+    i2c_write(0x14);
+    i2c_write(0x36);
+  }
+
+  i2c_stop();
+
+  if(res) {
+    goto err;
+  }
+
+  clock_delay_msec(20);
+
+  res = 0;
+  i2c_start(I2C_CO2SA_ADDR | I2C_READ);
+
+  if(res) {
+    goto err;
+  }
+
+  status = i2c_readAck();
+  buf[0] = i2c_readAck();
+  buf[1] = i2c_readAck();
+  csum = i2c_readNak();
+  i2c_stop();
+
+  val = ((int16_t)(buf[0] << 8)) | buf[1];
+
+  return val;
+
+err:
+  i2c_stop();
+  return 0;
+}
+SENSORS_SENSOR(co2_sa_kxx_sensor, "CO2", value, configure, status);

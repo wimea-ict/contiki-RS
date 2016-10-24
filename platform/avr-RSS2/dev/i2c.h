@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Swedish Institute of Computer Science.
+ * Copyright (c) 2010, Swedish Institute of Computer Science.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,63 +26,39 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * This file is part of the Contiki operating system.
- *
  */
 
 /**
  * \file
- *         Reboot Contiki shell command
+ *         includes for i2c core functions
  * \author
- *         Adam Dunkels <adam@sics.se>
+ *         Robert Olsson <robert@radio-sensors.com>
  */
 
 #include "contiki.h"
-#include "shell.h"
-#include "dev/leds.h"
-#include "dev/watchdog.h"
 
-#include <stdio.h>
-#include <string.h>
+/* Here we define the i2c address for dev we support */
+#define I2C_AT24MAC_ADDR  0xB0 /* EUI64 ADDR */
+#define I2C_SHT2X_ADDR    (0x40 << 1) /* SHT2X ADDR */
 
-/*---------------------------------------------------------------------------*/
-PROCESS(shell_reboot_process, "reboot");
-SHELL_COMMAND(reboot_command,
-	      "reboot",
-	      "reboot: reboot the system",
-	      &shell_reboot_process);
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(shell_reboot_process, ev, data)
-{
-  static struct etimer etimer;
 
-  PROCESS_EXITHANDLER(leds_off(LEDS_ALL);)
-  
-  PROCESS_BEGIN();
+/* Here we define a enumration for devices */
+#define I2C_AT24MAC       (1<<0)
+#define I2C_SHT2X         (1<<1)
+#define I2C_CO2SA         (1<<2)  /* Sense-Air CO2 */
 
-  shell_output_str(&reboot_command,
-		   "Rebooting the node in four seconds...", "");
+#define I2C_READ    1
+#define I2C_WRITE   0
 
-  etimer_set(&etimer, CLOCK_SECOND);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_RED);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_GREEN);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  leds_on(LEDS_RED);
-  etimer_reset(&etimer);
-  PROCESS_WAIT_UNTIL(etimer_expired(&etimer));
-  
-  watchdog_reboot();
-
-  PROCESS_END();
-}
-/*---------------------------------------------------------------------------*/
-void
-shell_reboot_init(void)
-{
-  shell_register_command(&reboot_command);
-}
-/*---------------------------------------------------------------------------*/
+void i2c_init(uint32_t speed);
+uint8_t i2c_start(uint8_t addr);
+void i2c_stop(void);
+void i2c_write(uint8_t u8data);
+uint8_t i2c_readAck(void);
+uint8_t i2c_readNak(void);
+uint8_t i2c_getstatus(void);
+uint16_t i2c_probe(void);
+void i2c_read_mem(uint8_t addr, uint8_t reg, uint8_t buf[], uint8_t bytes);
+void i2c_write_mem(uint8_t addr, uint8_t reg, uint8_t value);
+void i2c_at24mac_read(char *buf, uint8_t eui64);
+extern uint16_t i2c_probed; /* i2c devices we have probed */
