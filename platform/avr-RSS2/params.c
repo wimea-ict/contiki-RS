@@ -107,10 +107,10 @@ params_get_eui64(uint8_t *eui64) {
 uint8_t eemem_mac_address[] EEMEM = PARAMS_EUI64ADDR;
 uint8_t eemem_server_name[] EEMEM = PARAMS_SERVERNAME;
 uint8_t eemem_domain_name[] EEMEM = PARAMS_DOMAINNAME;
-#endif /*AVR_WEBSERVER */
 
+#endif /*AVR_WEBSERVER */
+//uint16_t eemem_transmission_interval EEMEM = TRANSMISSION_INTERVAL;
 uint16_t eemem_nodeid EEMEM = PARAMS_NODEID;
-uint8_t eemem_transmission_interval EEMEM = TRANSMISSION_INTERVAL;
 uint8_t eemem_channel[2] EEMEM = {PARAMS_CHANNEL, ~PARAMS_CHANNEL};
 uint16_t eemem_panid EEMEM = PARAMS_PANID;
 uint16_t eemem_panaddr EEMEM = PARAMS_PANADDR;
@@ -149,7 +149,7 @@ params_get_channel(void) {
     eeprom_write_word(&eemem_panaddr, PARAMS_PANADDR);
     eeprom_write_byte(&eemem_txpower, PARAMS_TXPOWER);
     eeprom_write_word(&eemem_nodeid, PARAMS_NODEID);
-	eeprom_write_word(&eemem_transmission_interval, TRANSMISSION_INTERVAL);
+	//eeprom_write_word(&eemem_transmission_interval, TRANSMISSION_INTERVAL);
     x[0] = PARAMS_CHANNEL;
     x[1]= ~x[0];
     eeprom_write_word((uint16_t *)&eemem_channel, *(uint16_t *)x);
@@ -173,12 +173,7 @@ uint16_t
 params_get_panid(void) {
   return eeprom_read_word(&eemem_panid);
 }
-//eeprom_write_word(&eemem_transmission_interval, TRANSMISSION_INTERVAL);
-//to read the transmission interval
-uint8_t
-params_get_transmission_interval(void) {
-  return eeprom_read_word(&eemem_transmission_interval);
-}
+
 
 uint16_t
 params_get_panaddr(void) {

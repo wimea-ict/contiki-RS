@@ -66,6 +66,6 @@ extern uint8_t crc8_ds18b20(uint8_t *buf, uint8_t buf_len);
 
 extern const struct sensors_sensor temp_sensor;
 
+//#define TEMP_SENSOR "temp"
 #define TEMP_SENSOR "temp"
-
 #endif /* TEMP_SENSOR_H_ */
