@@ -9,3 +9,4 @@ void display_system_uptime();
 void change_node_name(char * value);
 void display_node_name();
 void read_sensors(void);
+void set_datetime(char *value, uint8_t choice);
