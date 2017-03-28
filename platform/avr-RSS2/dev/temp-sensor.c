@@ -39,7 +39,7 @@
 #include <util/delay_basic.h>
 #define delay_us(us)   (_delay_loop_2(1 + (us * F_CPU) / 4000000UL))
 
-const struct sensors_sensor temp_mcu_sensor;
+const struct sensors_sensor temp_sensor;
 
 /* probe_for_ds18b20 probes for the sensor. Returns 0 on failure, 1 on success
  * Assumptions: only one sensor on the "1-wire bus", on port WSN_DS18B20_PORT

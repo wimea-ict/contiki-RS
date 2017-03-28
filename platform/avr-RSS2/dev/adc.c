@@ -12,6 +12,8 @@
 #include "adc.h"
 #include "rss2.h"
 
+const struct sensors_sensor adc_sensor;
+
 uint16_t
 adc_read(uint8_t pin)
 {
@@ -74,3 +76,33 @@ adc_read_a2(void)
 {
   return ((double)adc_read(A2)) * V_IN_FACTOR;
 }
+
+static int
+configure(int type, int c)
+{
+  return 0;
+}
+
+static int
+status(int type)
+{
+  return 1;
+}
+//added by Nsabagwa Mary 
+
+static int value(int type){
+int v=0;
+switch(type){
+case VIN_VALUE:
+	v= (int)adc_read_v_in();
+break;
+case A1_VALUE:  
+   v= (int)adc_read_a1();
+break;
+case A2_VALUE:  
+  v= (int)adc_read_a2();
+break;
+return v;
+}
+}
+SENSORS_SENSOR(adc_sensor,"adc_sensor", value, configure, status);

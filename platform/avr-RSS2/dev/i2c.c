@@ -45,7 +45,6 @@
 #include <compat/twi.h>
 #include <stdio.h>
 #include <string.h>
-#include "dev/co2_sa_kxx-sensor.h"
 
 void
 i2c_init(uint32_t speed)
@@ -55,96 +54,113 @@ i2c_init(uint32_t speed)
   TWSR = 0;                         /* no prescaler */
   TWBR = ((F_CPU / speed) - 16) / 2;  /* must be > 10 for stable operation */
 }
+
 uint8_t
 i2c_start(uint8_t addr)
 {
-  uint8_t twst;
-  uint32_t n;
-
   /* Send START condition */
   TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
 
-  /* Wait until transmission completed */
-  for(n = 0; n < 100000 && !(TWCR & (1 << TWINT)); n++) {
-  }
-  if(n >= 100000) {
-    return 1;
-  }
+  /* wait until transmission completed */
+	while(!(TWCR & (1<<TWINT))) ; 
 
   /* check value of TWI Status Register. Mask prescaler bits. */
-  twst = TW_STATUS & 0xF8;
-  if((twst != TW_START) && (twst != TW_REP_START)) {
-    return 1;
-  }
+	if ( (TW_STATUS != TW_START) && (TW_STATUS != TW_REP_START)) {
+        	return 1;
+    }
 
-  /* send device address */
-  TWDR = addr;
-  TWCR = (1 << TWINT) | (1 << TWEN);
+	/* send device address*/
+	TWDR = addr;
+	TWCR = (1<<TWINT) | (1<<TWEN);
 
-  /* wail until transmission completed and ACK/NACK has been received */
-  for(n = 0; n < 100000 && !(TWCR & (1 << TWINT)); n++) {
-  }
-  if(n >= 100000) {
-    return 1;
-  }
 
-  /* check value of TWI Status Register. Mask prescaler bits. */
-  twst = TW_STATUS & 0xF8;
-  if((twst != TW_MT_SLA_ACK) && (twst != TW_MR_SLA_ACK)) {
-    return 1;
-  }
+  // wait until transmission completed and ACK/NACK has been received
+	while(!(TWCR & (1<<TWINT)));
 
+  // check value of TWI Status Register. Mask prescaler bits.
+	if ( (TW_STATUS != TW_MT_SLA_ACK) && (TW_STATUS != TW_MR_SLA_ACK) ) { 
+               return 1;
+        }
   return 0;
-}
-void
-i2c_stop(void)
+}/* i2c_start */
+
+/*Terminate data transfer and release the I2C bus*/
+void i2c_stop(void)
 {
-  TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-}
-void
+    /* send stop condition */
+	TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTO);
+	
+	// wait until stop condition is executed and bus released
+	while(TWCR & (1<<TWSTO));
+
+}/* i2c_stop */333333
+
+
+uint8_t
 i2c_write(uint8_t u8data)
 {
-  TWDR = u8data;
-  TWCR = (1 << TWINT) | (1 << TWEN);
-  while((TWCR & (1 << TWINT)) == 0) ;
-}
+  // send data to the previously addressed device
+	TWDR = u8data;
+	TWCR = (1<<TWINT) | (1<<TWEN);
+
+	// wait until transmission completed
+	while(!(TWCR & (1<<TWINT)));
+
+	// check value of TWI Status Register. Mask prescaler bits
+	if ( (TW_STATUS != TW_MT_DATA_ACK)){
+		return 1;
+        }	
+	return 0;
+
+}/* i2c_write */
+
 uint8_t
 i2c_readAck(void)
 {
-  TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
-  while((TWCR & (1 << TWINT)) == 0) ;
-  return TWDR;
-}
+	TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWEA);
+	while(!(TWCR & (1<<TWINT)));    
+
+    return TWDR;
+
+}/* i2c_readAck */
+
 uint8_t
 i2c_readNak(void)
 {
-  TWCR = (1 << TWINT) | (1 << TWEN);
-  while((TWCR & (1 << TWINT)) == 0) ;
-  return TWDR;
-}
+	TWCR = (1<<TWINT) | (1<<TWEN);
+	while(!(TWCR & (1<<TWINT)));
+	
+    return TWDR;
+
+}/* i2c_readNak */
+
 static void
 print_delim(int p, char *s, const char *d)
 {
   if(p) {
     printf("%s", d);
   }
-  printf("%s", s);
+	printf("%s", s);
 }
+
+/*write to device register*/
 void
 i2c_write_mem(uint8_t addr, uint8_t reg, uint8_t value)
 {
-  i2c_start(addr | I2C_WRITE);
+  i2c_start(addr+TW_WRITE);
   i2c_write(reg);
   i2c_write(value);
   i2c_stop();
 }
+
+/*Read from device register*/
 void
 i2c_read_mem(uint8_t addr, uint8_t reg, uint8_t buf[], uint8_t bytes)
 {
   uint8_t i = 0;
-  i2c_start(addr | I2C_WRITE);
+  i2c_start(addr+TW_WRITE);
   i2c_write(reg);
-  i2c_start(addr | I2C_READ);
+  i2c_start(addr |TW_READ);
   for(i = 0; i < bytes; i++) {
     if(i == bytes - 1) {
       buf[i] = i2c_readNak();
@@ -154,6 +170,7 @@ i2c_read_mem(uint8_t addr, uint8_t reg, uint8_t buf[], uint8_t bytes)
   }
   i2c_stop();
 }
+
 void
 i2c_at24mac_read(char *buf, uint8_t eui64)
 {
@@ -189,6 +206,12 @@ i2c_probe(void)
     i2c_stop();
     probed |= I2C_CO2SA;
     print_delim(p++, "CO2SA", del);
+  }
+  watchdog_periodic();
+  if(!i2c_start(DS1307)) {
+    i2c_stop();
+    probed |= DS1307;
+    print_delim(p++, "DS1307", del);
   }
   return probed;
 }

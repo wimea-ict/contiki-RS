@@ -74,6 +74,7 @@ value(int type)
   /* Disable the ADC to save power */
   ADCSRA &= ~_BV(ADEN);
   /* ADMUX = 0;                //turn off internal vref */
+  //printf("mcu temp is %d\n",(int)((double)(v * 1.13 - 272.8) * 10));
   return (int)((double)(v * 1.13 - 272.8) * 10);
 }
 static int

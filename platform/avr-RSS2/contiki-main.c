@@ -73,6 +73,7 @@
 
 #include "net/rime.h"
 #include "i2cmaster.h"
+#include <util/twi.h>
 
 
 /* Track interrupt flow through mac, rdc and radio driver */
@@ -160,7 +161,7 @@ rng_get_uint8(void) {
 void probe_i2c_bus(){
      uint8_t ret = 0 ;
      printf("Probing I2C: \n");	
-     ret =  i2c_start(AT24MAC602_DEV_ADDR+I2C_WRITE) ;  // set device address and write mode
+     ret =  i2c_start(AT24MAC602_DEV_ADDR+TW_WRITE) ;  // set device address and write mode
      if( !ret ){
        printf("AT24MAC60 ") ;
        i2c_stop() ;
@@ -196,18 +197,18 @@ bool get_eui64_addr(uint8_t *addr_array){
      // read previously written value back from EEPROM address 5 
      //ret = i2c_start(AT24MAC602_DEV_ADDR+I2C_WRITE) ;     // set device address and write mode
      
-     i2c_start_wait(AT24MAC602_DEV_ADDR+I2C_WRITE) ;     // set device address and write mode
+     i2c_start_wait(AT24MAC602_DEV_ADDR+TW_WRITE) ;     // set device address and write mode
      if( ret ){
 	i2c_stop() ;
 
-	printf("ERROR : No Slave Dev Found at Addr %2x\n", AT24MAC602_DEV_ADDR+I2C_WRITE) ;
+	printf("ERROR : No Slave Dev Found at Addr %2x\n", AT24MAC602_DEV_ADDR+TW_WRITE) ;
 	return false ;
      
      } else {	
 
      	if( !i2c_write(EUI64_ADDR_LOC) )                      // write address = 5
      	{
-     	  if(! i2c_rep_start(AT24MAC602_DEV_ADDR+I2C_READ)){       // set device address and read mode
+     	  if(! i2c_rep_start(AT24MAC602_DEV_ADDR+TW_READ)){       // set device address and read mode
     
      		printf("\n********EUI64 ADDR : ") ;
      		for( i = 0 ; i < SIZE_OF_EUI64_ADDR-1 ; ++i){

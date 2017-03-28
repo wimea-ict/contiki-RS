@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, Swedish Institute of Computer Science.
+ * Copyright (c) 2015, Copyright Markus Hidell, Robert Olsson
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,22 +26,40 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ * This file is part of the Contiki operating system.
  *
- * -----------------------------------------------------------------
  *
- * Author  : Robert Olsson
- * Created : 2015-10-27
- * Updated : $Date: 2007/11/13 20:36:40 $
- *           $Revision: 1.1 $
+ * Authors  : Maximus Byamukama, Flavia Nshemerirwe
+ * Created : 2017-03-27
  */
+ 
 
-#ifndef TEMP_MCU_SENSOR_H_
-#define TEMP_MCU_SENSOR_H_
+#define GET_TIME	0
+#define GET_DATE	1
+#define SET_SEC   	2
+#define SET_MIN		3
+#define SET_HRS		4
+#define SET_DAY		5
+#define SET_MONTH	6
+#define SET_YEAR	7
 
-#include "lib/sensors.h"
+/*DS1307 RTC ROUTINES*/
+#define REG_SECS 0x00
+#define REG_MINS 0x01
+#define REG_HRS 0x02
+#define DAYOFWK_REGISTER 0x03
+#define REG_DAYS 0x04
+#define REG_MONTH 0x05
+#define REG_YRS 0x06
+#define CONTROL_REGISTER 0x07
+#define RAM_BEGIN 0x08
+#define RAM_END 0x3F
 
-extern const struct sensors_sensor temp_mcu_sensor;
+uint8_t bcd_to_dec(uint8_t val);
+uint8_t dec_to_bcd(uint8_t val);
+void DS1307_init(void);
+const char * DS1307_get_time();
+void DS1307_set_time(uint8_t h, uint8_t m, uint8_t s);
+const char * DS1307_get_date();
+void DS1307_set_date(uint8_t d, uint8_t m, uint8_t y);
 
-#define TEMP_MCU_SENSOR 1
-
-#endif /* TEMP_MCU_SENSOR_H_ */

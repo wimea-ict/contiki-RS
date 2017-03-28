@@ -61,4 +61,4 @@ configure(int type, int c)
   return 0;
 }
 /*---------------------------------------------------------------------------*/
-SENSORS_SENSOR(light_sensor, "Light", value, configure, status);
+SENSORS_SENSOR(light_sensor, LIGHT_SENSOR, value, configure, status);

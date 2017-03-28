@@ -37,9 +37,12 @@
 
 #include "contiki.h"
 
+
 /* Here we define the i2c address for dev we support */
 #define I2C_AT24MAC_ADDR  0xB0 /* EUI64 ADDR */
 #define I2C_SHT2X_ADDR    (0x40 << 1) /* SHT2X ADDR */
+#define DS1307            0xD0
+
 
 
 /* Here we define a enumration for devices */
@@ -47,13 +50,18 @@
 #define I2C_SHT2X         (1<<1)
 #define I2C_CO2SA         (1<<2)  /* Sense-Air CO2 */
 
-#define I2C_READ    1
-#define I2C_WRITE   0
+/* define CPU frequency in Mhz here if not defined in Makefile */
+#ifndef F_CPU
+#define F_CPU 16000000L
+#endif
+
+/* I2C clock in Hz */
+#define F_SCL  100000L
 
 void i2c_init(uint32_t speed);
 uint8_t i2c_start(uint8_t addr);
 void i2c_stop(void);
-void i2c_write(uint8_t u8data);
+uint8_t i2c_write(uint8_t u8data);
 uint8_t i2c_readAck(void);
 uint8_t i2c_readNak(void);
 uint8_t i2c_getstatus(void);

@@ -41,5 +41,6 @@
 #include "lib/sensors.h"
 
 extern const struct sensors_sensor light_sensor;
+#define LIGHT_SENSOR 0
 
 #endif /* LIGHT-SENSOR_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006, Swedish Institute of Computer Science.
+ * Copyright (c) 2015, Copyright Per Lindgren <per.o.lindgren@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,22 +26,23 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ * This file is part of the Contiki operating system.
  *
- * -----------------------------------------------------------------
  *
- * Author  : Robert Olsson
- * Created : 2015-10-27
- * Updated : $Date: 2007/11/13 20:36:40 $
- *           $Revision: 1.1 $
+ *  Added By Nsabagwa Mary
+ * Created : 2015-11-22
  */
 
-#ifndef TEMP_MCU_SENSOR_H_
-#define TEMP_MCU_SENSOR_H_
+#ifndef BATTERY_SENSOR_H_
+#define BATTERY_SENSOR_H_
 
 #include "lib/sensors.h"
+#include <sys/clock.h>
+#include "contiki.h"
+#include "rss2.h"
 
-extern const struct sensors_sensor temp_mcu_sensor;
+extern const struct sensors_sensor battery_sensor;
 
-#define TEMP_MCU_SENSOR 1
+#define BATTERY_SENSOR 0
 
-#endif /* TEMP_MCU_SENSOR_H_ */
+#endif /* BATTERY_SENSOR_H_ */
