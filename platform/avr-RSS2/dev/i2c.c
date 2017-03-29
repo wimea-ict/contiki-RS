@@ -64,8 +64,12 @@ i2c_start(uint8_t addr)
   /* wait until transmission completed */
 	while(!(TWCR & (1<<TWINT))) ; 
 
-  /* check value of TWI Status Register. Mask prescaler bits. */
-	if ( (TW_STATUS != TW_START) && (TW_STATUS != TW_REP_START)) {
+  /* check value of TWI Status Register. Mask prescaler bits. 
+  * TW_STATUS defined in twi.h 
+  *TW_STATUS = TWSR & TW_STATUS_MASK where TW_STATUS_MASK is (_BV(TWS7)|_BV(TWS6)|_BV(TWS5)|\
+  *_BV(TWS4)|_BV(TWS3))  
+  */
+	if ( (TW_STATUS != TW_START) && (TW_STATUS != TW_REP_START)) { //TW_STATUS 
         	return 1;
     }
 
@@ -147,7 +151,7 @@ print_delim(int p, char *s, const char *d)
 void
 i2c_write_mem(uint8_t addr, uint8_t reg, uint8_t value)
 {
-  i2c_start(addr+TW_WRITE);
+  i2c_start(addr+TW_WRITE); // TW_READ and TW_WRITE are defined in twi.h
   i2c_write(reg);
   i2c_write(value);
   i2c_stop();
