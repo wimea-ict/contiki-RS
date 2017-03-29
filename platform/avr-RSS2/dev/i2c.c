@@ -97,7 +97,7 @@ void i2c_stop(void)
 	// wait until stop condition is executed and bus released
 	while(TWCR & (1<<TWSTO));
 
-}/* i2c_stop */333333
+}/* i2c_stop */
 
 
 uint8_t
@@ -205,12 +205,12 @@ i2c_probe(void)
     probed |= I2C_SHT2X;
     print_delim(p++, "SHT2X", del);
   }
-  watchdog_periodic();
+  /*watchdog_periodic();
   if(!i2c_start(I2C_CO2SA_ADDR)) {
     i2c_stop();
     probed |= I2C_CO2SA;
     print_delim(p++, "CO2SA", del);
-  }
+  }*/
   watchdog_periodic();
   if(!i2c_start(DS1307)) {
     i2c_stop();
