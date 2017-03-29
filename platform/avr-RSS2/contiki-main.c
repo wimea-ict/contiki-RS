@@ -73,6 +73,7 @@
 
 #include "net/rime.h"
 #include "i2cmaster.h"
+#include "dev/i2c.h"
 #include <util/twi.h>
 
 
@@ -180,7 +181,7 @@ bool get_eui64_addr(uint8_t *addr_array){
 
      cli() ; // clear interrupts
 
-     i2c_init();                             // initialize I2C library
+     i2c_init(SCL_CLOCK);                             // initialize I2C library
 
      sei() ; // set interrupts
 
@@ -197,7 +198,7 @@ bool get_eui64_addr(uint8_t *addr_array){
      // read previously written value back from EEPROM address 5 
      //ret = i2c_start(AT24MAC602_DEV_ADDR+I2C_WRITE) ;     // set device address and write mode
      
-     i2c_start_wait(AT24MAC602_DEV_ADDR+TW_WRITE) ;     // set device address and write mode
+     i2c_start_wait(AT24MAC602_DEV_ADDR+TW_WRITE) ;     // set device address and write mode TW_WRITE defined in twi.h
      if( ret ){
 	i2c_stop() ;
 

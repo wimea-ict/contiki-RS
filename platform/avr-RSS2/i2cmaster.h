@@ -87,11 +87,13 @@
 
 #include <avr/io.h>
 
-/** defines the data direction (reading from I2C device) in i2c_start(),i2c_rep_start() */
-#define I2C_READ    1
+/* define CPU frequency in Mhz here if not defined in Makefile */
+#ifndef F_CPU
+#define F_CPU 8000000UL
+#endif
 
-/** defines the data direction (writing to I2C device) in i2c_start(),i2c_rep_start() */
-#define I2C_WRITE   0
+/* I2C clock in Hz */
+#define SCL_CLOCK  100000L
 
 
 /**
@@ -99,7 +101,7 @@
  @param  void
  @return none
  */
-extern void i2c_init(void);
+//extern void i2c_init(void);
 
 
 /** 
@@ -107,7 +109,7 @@ extern void i2c_init(void);
  @param void
  @return none
  */
-extern void i2c_stop(void);
+//extern void i2c_stop(void);
 
 
 /** 
@@ -117,7 +119,7 @@ extern void i2c_stop(void);
  @retval   0   device accessible 
  @retval   1   failed to access device 
  */
-extern unsigned char i2c_start(unsigned char addr);
+//extern unsigned char i2c_start(unsigned char addr);
 
 
 /**
@@ -127,7 +129,7 @@ extern unsigned char i2c_start(unsigned char addr);
  @retval  0 device accessible
  @retval  1 failed to access device
  */
-extern unsigned char i2c_rep_start(unsigned char addr);
+extern uint8_t i2c_rep_start(uint8_t addr);
 
 
 /**
@@ -137,7 +139,7 @@ extern unsigned char i2c_rep_start(unsigned char addr);
  @param    addr address and transfer direction of I2C device
  @return   none
  */
-extern void i2c_start_wait(unsigned char addr);
+extern void i2c_start_wait(uint8_t addr);
 
  
 /**
@@ -146,20 +148,20 @@ extern void i2c_start_wait(unsigned char addr);
  @retval   0 write successful
  @retval   1 write failed
  */
-extern unsigned char i2c_write(unsigned char data);
+//extern uint8_t i2c_write(uint8_t data);
 
 
 /**
  @brief    read one byte from the I2C device, request more data from device 
  @return   byte read from I2C device
  */
-extern unsigned char i2c_readAck(void);
+//extern unsigned char i2c_readAck(void);
 
 /**
  @brief    read one byte from the I2C device, read is followed by a stop condition 
  @return   byte read from I2C device
  */
-extern unsigned char i2c_readNak(void);
+//extern unsigned char i2c_readNak(void);
 
 /** 
  @brief    read one byte from the I2C device
